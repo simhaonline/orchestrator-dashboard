@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.panel {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transition: 0.3s;
+}
+
+.panel-body {
+  font-family: Tahoma;
+}
+
+.table-condensed{
+  font-size: 14px;
+}
+
+.table tbody td, th {
+  vertical-align: middle !important;
+}
+
+</style>
+
+<div class="container-fluid" >
+    <h2>Users</h2>
+<!--Table-->
+<div class="table-responsive">
+<table id="tableUsers" class="table table-sm  table-condensed table-striped table-bordered" >
+<!--Table head-->
+  <thead>
+    <tr>
+      <th>sub</th>
+      <th>Username</th>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Organisation</th>
+      <th>e-mail</th>
+      <th>Role</th>
+      <th class="no-sort"></th>
+      <th class="no-sort"></th>
+    </tr>
+  </thead>
+  <!--Table head-->
+  <!--Table body-->
+  <tbody>
+    {% for user in users%}
+    <tr>
+        <th scope="row">{{user.sub}}</th>
+        <td>{{user.username}}</td>
+        <td>{{user.given_name}}</td>
+        <td>{{user.family_name}}</td>
+        <td>{{user.organisation_name}}</td>
+        <td>{{user.email}}</td>
+        <td>{{user.role}}</td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_user', subject=user.sub) }}'"><i class="fas fa-edit mr-2 grey-text" aria-hidden="true"></i></button></td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_deployments', subject=user.sub) }}'"><i class="fas fa-server mr-2 grey-text" aria-hidden="true"></i></button></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <!--Table body-->
+</table>
+</div>
+<!--Table-->
+</div>
+
+<script>
+    $('#tableUsers').dataTable( {
+        "responsive": true,
+        "order": [],
+        "columnDefs": [ {
+          "targets"  : 'no-sort',
+          "orderable": false,
+        }],
+        "order": [[ 3, "asc" ]]
+    });
+</script>
+
+{% endblock %}

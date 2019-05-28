@@ -1,46 +1,76 @@
 <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
-      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-      <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
-      <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet">
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
-      <script src="static/bootstrap/Bootstrap-Confirmation-2/bootstrap-confirmation.js"></script>
-    </head>
-    <body>
-        <nav class="navbar navbar-inverse">
-          <div class="container-fluid">
-             <div class="navbar-header">
-		<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
-                  <span class="icon-bar"></span>
-                  <span class="icon-bar"></span>
-                  <span class="icon-bar"></span>
-		</button>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- BS4-->
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">-->
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>-->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>-->
+    <!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>-->
+    <!-- DataTables -->
+    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css"/>-->
+    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.2/css/responsive.bootstrap4.min.css"/>-->
+    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/scroller/2.0.0/css/scroller.bootstrap4.min.css"/>-->
+    <!-- <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>-->
+    <!-- <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap4.min.js"></script>-->
+    <!-- <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.2/js/dataTables.responsive.min.js"></script>-->
+    <!-- <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.2/js/responsive.bootstrap4.min.js"></script>-->
+    <!-- <script type="text/javascript" src="https://cdn.datatables.net/scroller/2.0.0/js/dataTables.scroller.min.js"></script>-->
+
+    <!-- BS3 -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+    <!-- DataTables -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.2/css/responsive.bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/scroller/2.0.0/css/scroller.bootstrap.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.2/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.2/js/responsive.bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/scroller/2.0.0/js/dataTables.scroller.min.js"></script>
+    <!-- FontAwesome-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+</head>
+<body>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+		        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+		        </button>
                 <a class="navbar-brand" href="">PaaS Orchestrator Dashboard</a>
-             </div>
-	     <div class="collapse navbar-collapse" id="myNavbar">
-	       <ul class="nav navbar-nav">
-		 <li class="active"><a href="{{ url_for("home") }}">Home</a></li>
-	       </ul>	 
-	       {% if session['username'] %}
-	       <ul class="nav navbar-nav">
-		 <li class="active"><a href="{{ url_for("getslas") }}">SLAs</a></li>
-                 <li class="active"><a href="{{ url_for("show_settings") }}">Settings</a></li>
-               </ul>
-               <ul class="nav navbar-nav navbar-right">
-	         <li class="dropdown">
-			 <a class="dropdown-toggle" data-toggle="dropdown" href="#"><img class="img-circle" src="{{ session['gravatar'] }}"</src> {{ session['username'] }}<span class="caret"></span></a>
-		       <ul class="dropdown-menu">
-                         <li><a href="{{ url_for("logout") }}">Logout</a></li>
-		       </ul>
-	         </li>
-               </ul>
-	       {% endif %}
-             </div>
-	  </div>
-        </nav>
-        {% block content %}{% endblock %}
-    </body>
+            </div>
+	        <div class="collapse navbar-collapse" id="myNavbar">
+	            <ul class="nav navbar-nav">
+		            <li class="active"><a href="{{ url_for('home') }}">Home</a></li>
+	            </ul>
+	            {% if session['username'] %}
+	            <ul class="nav navbar-nav">
+		            <li class="active"><a href="{{ url_for('getslas') }}">SLAs</a></li>
+                    <li class="active"><a href="{{ url_for('show_settings') }}">Settings</a></li>
+                    {% if session['userrole'] == 'admin' %}
+                    <li class="active"><a href="{{ url_for('show_users') }}">Users</a></li>
+                    {% endif %}
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+	                <li class="dropdown">
+			            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><img class="img-circle" src="{{ session['gravatar'] }}"/> {{ session['username'] }}<span class="caret"></span></a>
+		                <ul class="dropdown-menu">
+                            <li><a href="{{ url_for('logout') }}">Logout</a></li>
+		                </ul>
+	                </li>
+                </ul>
+	            {% endif %}
+            </div>
+	    </div>
+    </nav>
+    {% block content %}{% endblock %}
+</body>
 </html>

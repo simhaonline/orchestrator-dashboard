@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+.panel {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transition: 0.3s;
+}
+
+.panel-body {
+  font-family: Tahoma;
+}
+
+.table-condensed{
+  font-size: 14px;
+}
+
+.table tbody td, th {
+  vertical-align: middle !important;
+}
+
+</style>
+
+<div class="container-fluid" >
+    <h2>Deployments for:&nbsp;{{user.name}}</h2>
+
+<!--Table-->
+<div class="table-responsive">
+<table id="tableDeployments" class="table table-sm table-condensed table-striped table-bordered" >
+<!--Table head-->
+  <thead>
+    <tr>
+      <th>uuid</th>
+      <th>Status</th>
+      <th>Description</th>
+      <th>Created At</th>
+      <th>Updated At</th>
+      <th>Deployed At</th>
+      <th>Physical ID</th>
+      <th>Endpoint</th>
+      <th class="no-sort"></th>
+      <th class="no-sort"></th>
+      <th class="no-sort"></th>
+    </tr>
+  </thead>
+  <!--Table head-->
+  <!--Table body-->
+  <tbody>
+    {% for deployment in deployments%}
+    <tr>
+        <th scope="row">{{deployment.uuid}}</th>
+        <td
+        {% if "COMPLETE" in deployment.status %}
+        class="success"
+        {% elif "FAIL" in deployment.status %}
+        class="danger"
+        {% else %}
+        class="warning"
+        {% endif %}
+        >{{deployment.status}}</td>
+        <td>{{deployment.additionaldescription}}</td>
+        <td>{{deployment.creationTime}}</td>
+        <td>{{deployment.updateTime}}</td>
+        <td>{{deployment.cloudProviderName}}</td>
+        <td>{{deployment.physicalId}}</td>
+        <td>{{deployment.endpoint}}</td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i></button></td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i></button></td>
+        <td style='text-align:center'>
+        {% if deployment.remote == 1 %}
+            <i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">
+        {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <!--Table body-->
+</table>
+</div>
+<br><br>
+<button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('show_users') }}'">
+                      <span class="fas fa-arrow-left mr-2"></span> Back</button>
+
+</div>
+
+
+<script>
+    $('#tableDeployments').DataTable({
+        "responsive": true,
+        "order": [],
+        "columnDefs": [ {
+            "targets"  : 'no-sort',
+            "orderable": false,
+         }],
+        "order": [[ 3, "desc" ]]
+    });
+</script>
+
+{% endblock %}

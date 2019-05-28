@@ -1,6 +1,7 @@
 from flask import Flask
 from werkzeug.contrib.fixers import ProxyFix
 from flask_dance.consumer import OAuth2ConsumerBlueprint
+from flask_mail import Mail
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -15,6 +16,7 @@ iam_token_url=iam_base_url + '/token'
 iam_refresh_url=iam_base_url + '/token'
 iam_authorization_url=iam_base_url + '/authorize'
 
+
 iam_blueprint = OAuth2ConsumerBlueprint(
     "iam", __name__,
     client_id=app.config['IAM_CLIENT_ID'],
@@ -26,6 +28,8 @@ iam_blueprint = OAuth2ConsumerBlueprint(
     redirect_to='home'
 )
 app.register_blueprint(iam_blueprint, url_prefix="/login")
+
+mail = Mail(app)
 
 from app import routes
 

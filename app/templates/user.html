@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+.panel {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transition: 0.3s;
+}
+
+.panel-body {
+  font-family: Tahoma;
+}
+
+</style>
+
+<div class="container" style="width: 1280px !important;">
+    <h2>User data:&nbsp;{{user[1]}}</h2>
+
+    <form id="user_data" action="{{ url_for('show_user', subject=user.sub) }}" method="post">
+      <div class="form-group">
+        <label for="subject">sub</label>
+        <input type="text" class="form-control" id="subject" name="subject" placeholder="sub" value="{{user.sub}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="given_name">First Name</label>
+        <input type="text" class="form-control" id="given_name" name="given_name" placeholder="First Name" value="{{user.given_name}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="family_name">Last Name</label>
+        <input type="text" class="form-control" id="family_name" name="family_name" placeholder="Last name" value="{{user.family_name}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="Username" value="{{user.username}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="email">e-mail</label>
+        <input type="text" class="form-control" id="email" name="email" placeholder="E-mail" value="{{user.email}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="organisation_name">Organisation</label>
+        <input type="text" class="form-control" id="organisation_name" name="organisation_name" placeholder="Organisation name" value="{{user.organisation_name}}" readonly>
+      </div>
+      <div class="form-group">
+        <label for="role">Role</label>
+        <select id="role" name="role" class="form-control"  value="{{user,role}}"  {% if user.sub==session['userid'] %}disabled{% endif %}>
+            <option {% if user.role=='user' %}selected{% endif %} value="user">User</option>
+            <option {% if user.ROLE=='admin' %}selected{% endif %} value="admin">Admin</option>
+        </select>
+      </div>
+      <label for="active">Active</label>
+      <select id="active" name="active" class="form-control"  value="{{user.active}}" {% if user.sub==session['userid'] %}disabled{% endif %}>
+          <option {% if user.active==0 %}selected{% endif %} value="0">Inactive</option>
+          <option {% if user.active==1 %}selected{% endif %} value="1">Active</option>
+      </select>
+      {% if user.sub==session['userid'] %}
+        <input type="hidden" name="role" value="{{user.role}}"/>
+        <input type="hidden" name="active" value="{{user.active}}"/>
+      {% endif %}
+      <br/>
+      <button type="submit" class="btn btn-small btn-primary"><span class="fas fa-download mr-2"></span> Update</button>
+      <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('show_users') }}'">
+             <span class="fas fa-arrow-left mr-2"></span> Back</button>
+    </form>
+
+</div>
+
+
+
+{% endblock %}

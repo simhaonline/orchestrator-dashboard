@@ -3,8 +3,14 @@
 {% block content %}
 
 <div class="container">
-    <h1>TEMPLATE</h1>
-    <pre>{{ template | safe }}</pre>
+    <h1>INPUT</h1>
+    <pre>{{ input | safe }}</pre>
+    <br>
+    <h1>OUTPUT</h1>
+    <pre>{{ output | safe }}</pre>
+    <br>
+    <h1>LINKS</h1>
+    <pre>{{ links | safe }}</pre>
     <br>
     <button type=button class="btn btn-small btn-default" onclick="history.back()">
              <span class="fas fa-arrow-left mr-2"></span> Back</button>
