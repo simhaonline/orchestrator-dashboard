@@ -321,26 +321,32 @@ def cvdeployment(tp):
     deployment['uuid'] = tp[0]
     deployment['creationTime'] = tp[1]
     deployment['updateTime'] = tp[2]
-    if not tp[3] is None and not tp[3] == '':
+    if not tp[3] is None:
         deployment['physicalId'] = tp[3]
     else:
         deployment['physicalId'] = ''
     deployment['additionaldescription'] = tp[4]
     deployment['status'] = tp[5]
-    deployment['outputs'] = json.loads(tp[6])
+    if not tp[6] is None and not tp[6] is '':
+        deployment['outputs'] = json.loads(tp[6])
+    else:
+        deployment['outputs'] = ''
     deployment['task'] = tp[7]
-    deployment['links'] = json.loads(tp[8])
+    if not tp[8] is None and not tp[8] is '':
+        deployment['links'] = json.loads(tp[8])
+    else:
+        deployment['links'] = ''
     createdby = {}
     createdby['issuer'] = tp[18]
     createdby['subject'] = tp[9]
     deployment['createdBy'] = createdby
-    if not tp[10] is None and not tp[10] == '':
+    if not tp[10] is None:
         deployment['cloudProviderName'] = tp[10]
     else:
         deployment['cloudProviderName'] = ''
     deployment['endpoint'] = tp[11]
     deployment['template'] = tp[12]
-    if not tp[13] is None and not tp[13] == '':
+    if not tp[13] is None and not tp[13] is '':
         deployment['inputs'] = json.loads(tp[13])
     else:
         deployment['inputs'] = ''
@@ -459,7 +465,7 @@ def updatedeploymentsstatus(deployments, userid):
         records = cursor.fetchall()
         for r in records:
             uuid = r[0]
-            if uuid  not in iids:
+            if uuid not in iids:
                 time_string = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
                 update_query = "UPDATE `deployments` SET `update_time` = '{}', `status` = '{}' WHERE `uuid` = '{}'"
                 update_cmd = update_query.format(time_string, 'DELETE_COMPLETE',uuid)
