@@ -15,7 +15,9 @@ import mysql.connector
 from dateutil import parser
 
 iam_base_url = app.app.config['IAM_BASE_URL']
-
+issuer = iam_base_url
+if not issuer.endswith('/'):
+    issuer += '/'
 db_host = app.app.config['DB_HOST']
 db_port = app.app.config['DB_PORT']
 db_user = app.app.config['DB_USER']
@@ -82,7 +84,7 @@ def show_deployments(subject):
 
         headers = {'Authorization': 'bearer %s' % access_token}
 
-        url = orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, iam_base_url), 0, 999999)
+        url = orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, issuer), 0, 999999)
         response = requests.get(url, headers=headers)
 
         deporch = []
@@ -328,12 +330,12 @@ def cvdeployment(tp):
     deployment['additionaldescription'] = tp[4]
     deployment['status'] = tp[5]
     if not tp[6] is None and not tp[6] is '':
-        deployment['outputs'] = json.loads(tp[6])
+        deployment['outputs'] = json.loads(tp[6].replace("\n", "\\n"))
     else:
         deployment['outputs'] = ''
     deployment['task'] = tp[7]
     if not tp[8] is None and not tp[8] is '':
-        deployment['links'] = json.loads(tp[8])
+        deployment['links'] = json.loads(tp[8].replace("\n", "\\n"))
     else:
         deployment['links'] = ''
     createdby = {}
@@ -347,7 +349,7 @@ def cvdeployment(tp):
     deployment['endpoint'] = tp[11]
     deployment['template'] = tp[12]
     if not tp[13] is None and not tp[13] is '':
-        deployment['inputs'] = json.loads(tp[13])
+        deployment['inputs'] = json.loads(tp[13].replace("\n", "\\n"))
     else:
         deployment['inputs'] = ''
     deployment['locked'] = tp[15]
