@@ -160,3 +160,8 @@ If you are running the docker container, you need to ensure that the cert file i
 
 - https://2.python-requests.org/en/master/user/advanced/#ssl-cert-verification
 
+# Create mysql database using docker
+
+```
+# docker run -d --name orchestrator-dashboard-db -p 3306:3306 -v $PWD/db_data:/var/lib/mysql -v $PWD/utils/:/docker-entrypoint-initdb.d --env-file=$PWD/mysqlenv  mysql:5.7
+```
