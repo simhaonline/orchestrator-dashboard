@@ -36,8 +36,8 @@
 </style>
 
 
-
-<div class="container-fluid" >
+<br>
+<div class="container-fluid">
     {% set ar = namespace(found=false) %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -82,11 +82,11 @@
             <th scope="row">{{deployment.uuid}}</th>
             <td style="vertical-align: center !important"
             {% if "COMPLETE" in deployment.status %}
-            class="success"
+            class="table-success"
             {% elif "FAIL" in deployment.status %}
-            class="danger"
+            class="table-danger"
             {% else %}
-            class="warning"
+            class="table-warning"
             {% endif %}
             >{{deployment.status}}</td>
             <td>{{deployment.additionaldescription}}</td>
@@ -154,7 +154,7 @@ function confirmDialog(message, handler){
 <script>
     $('#tableUserDeployments').dataTable( {
         initComplete: function(){
-          $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-small btn-default' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-small btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
+          $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-outline-secondary' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
         },
         "responsive": true,
         "order": [],
