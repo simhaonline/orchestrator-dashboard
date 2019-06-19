@@ -1,28 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
+<!--style>
 .jumbotron{
  border: 2px solid black;
  padding: 25px;
 }
-</style>
+</style-->
 
-<div class="container">
-    <div class = "jumbotron">
-        <div class="row">
-            <div class="col-lg-7">
-                <h1 class="display-3">Welcome!</h1>
-                <p>This is the PaaS Orchestrator Dashboard.</p>
-                <p>
-                    <a class="btn btn-primary btn-lg" role="button" href="{{ url_for('iam.login') }}">Login with IAM &raquo;</a>
-                </p>
-            </div>
-            <div class="col-lg-5">
-	            <img src="static/images/orchestrator-logo.png"/>
-            </div>
-        </div>
-    </div>
+<div class = "jumbotron jumbotron-fluid">
+  <div class="container">
+    <div class="row">
+     <div class="col-lg-7">
+     <h1 class="display-3">Welcome!</h1>
+     <p>This is the PaaS Orchestrator Dashboard.</p>
+     <p>
+        <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Login with IAM &raquo;</a>
+     </p>
+     </div>
+     <div class="col-lg-5">
+        <img src="static/images/orchestrator-logo.png"></img>
+     </div>
+  </div>
 </div>
 {% endblock %}
-
