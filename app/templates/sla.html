@@ -32,7 +32,7 @@
         <div class="card-body">
 
     <div class="table-responsive">
-        <table class="table table-condensed table-striped table-sm table-bordered" width="100%" cellspacing="0">
+        <table id="tableSLAs" class="table table-bordered" width="100%" cellspacing="0">
             <thead>
                 <tr>
 	            <!-- <th>id</th>-->
@@ -59,6 +59,17 @@
     </div>
 </div>
 
+<script>
+    $('#tableSLAs').dataTable( {
+        "responsive": true,
+        "order": [],
+        "columnDefs": [ {
+          "targets"  : 'no-sort',
+          "orderable": false,
+        }],
+        "order": [[ 3, "asc" ]]
+    });
+</script>
 
 {% endblock %}
 
