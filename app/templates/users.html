@@ -22,11 +22,18 @@
 
 </style>
 
+<br>
 <div class="container-fluid" >
-    <h2>Users</h2>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">Users</h4>
+        </div>
+        <div class="card-body">
+
 <!--Table-->
 <div class="table-responsive">
-<table id="tableUsers" class="table table-sm  table-condensed table-striped table-bordered" >
+<table id="tableUsers" class="table table-bordered" width="100%" cellspacing="0">
 <!--Table head-->
   <thead>
     <tr>
@@ -53,8 +60,8 @@
         <td>{{user.organisation_name}}</td>
         <td>{{user.email}}</td>
         <td>{{user.role}}</td>
-        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_user', subject=user.sub) }}'"><i class="fas fa-edit mr-2 grey-text" aria-hidden="true"></i></button></td>
-        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_deployments', subject=user.sub) }}'"><i class="fas fa-server mr-2 grey-text" aria-hidden="true"></i></button></td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_user', subject=user.sub) }}'"><i class="fas fa-edit mr-2 grey-text" aria-hidden="true"></i>Details</button></td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_deployments', subject=user.sub) }}'"><i class="fas fa-server mr-2 grey-text" aria-hidden="true"></i>Deployments</button></td>
     </tr>
     {% endfor %}
   </tbody>
@@ -62,6 +69,8 @@
 </table>
 </div>
 <!--Table-->
+</div>
+</div>
 </div>
 
 <script>
