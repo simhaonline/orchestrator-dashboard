@@ -15,15 +15,17 @@
     {% endif %}
     {% endwith %}
 
-    <br/>
-    <div class=text-left>
-        <h3>New deployment</h3>
-        <br>
-    </div>
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">New deployment</h4>
+        </div>
+        <div class="card-body">
+
     <form name="tosca_template" action="{{ url_for('depcreate') }}" method='POST'>
         <div class="form-group">
             <label for="tosca_template">Select TOSCA Template:</label>
-            <select class="js-example-basic-single" name="tosca_template" id ="tosca_template">
+            <select class="js-example-basic-single js-states form-control" name="tosca_template" id ="tosca_template">
                 <!-- <option value="" selected disabled>-->
                 <!-- <option hidden selected disabled >Select a template...</option> -->
                 {% for tosca in templates %}
@@ -33,13 +35,21 @@
         </div>
         <button type="submit" class="btn btn-success">Configure</button>
         {% if not selectedTemplate is defined %}
-        <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('home') }}'">
+        <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('home') }}'">
              <span class="fas fa-arrow-left mr-2"></span> Back</button>
         {% endif %}
     </form>
+    </div>
+    </div>
+
 
     {% if selectedTemplate is defined %}
-    <h1> Template: {{selectedTemplate}} </h1>
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">Template: {{selectedTemplate}}</h4>
+        </div>
+        <div class="card-body">
 
     {% if description is defined %}
     <div class="alert alert-info">
@@ -91,10 +101,12 @@
             <label class="form-check-label" for="sendEmailFeedback">Send a confirmation email when complete</label>
         </div>
         <br/>
-        <button type="submit" class="btn btn-success submitBtn">Deploy!</button>
-        <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('home') }}'">
+        <button type="submit" class="btn btn-success submitBtn">Submit</button>
+        <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('home') }}'">
              <span class="fas fa-arrow-left mr-2"></span> Back</button>
     </form>
+    </div>
+    </div>
     {% endif %}
 </div>
 
