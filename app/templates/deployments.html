@@ -68,9 +68,7 @@
           <th>Updated At</th>
           <th>Deployed At</th>
           <th>Endpoint</th>
-          <th class="no-sort"></th>
-          <th class="no-sort"></th>
-          <th class="no-sort"></th>
+          <th>Actions</th>
         </tr>
       </thead>
       <!--Table head-->
@@ -96,9 +94,38 @@
             <td>{{deployment.creationTime}}</td>
             <td>{{deployment.cloudProviderName}}</td>
             <td>{{deployment.endpoint}}</td>
-            <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show output"></i></button></td>
-            <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplate', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i></button></td>
-            <td style='text-align:center'><button class='btn' onclick='confirmDelete((ans)=>{if(ans){location.href="{{ url_for('depdel', depid=deployment.uuid) }}"}});'><i class='fas fa-trash mr-2 grey-text' aria-hidden='true' title="Delete deployment"></i></button></td>
+            <td style='text-align:center'>
+              <div class="btn-group">
+                <!-- DELETE -->
+                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_confirm_{{deployment.uuid}}">
+                  <span class="fas fa-trash-alt mr-2"></span>Delete instance
+                </button>
+                <!-- Modal DELETE-->
+                <div class="modal fade" id="delete_confirm_{{deployment.uuid}}">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="delete_confirm_label_{{deployment.uuid}}">Confirm deployment deletion</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      </div>
+                      <div class="modal-body">
+                        Do you really want to delete the deployment {{deployment.uuid}}?
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <a type="button" class="btn btn-danger" href="{{ url_for("depdel", depid=deployment.uuid) }}">Delete deployment</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+                  <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="{{ url_for('depoutput', depid=deployment.uuid) }}"><span class="fas fa-folder-open mr-2 grey-text"></span>Details</a>
+                  <a class="dropdown-item" href="{{ url_for('deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
+              </div>
+            </td>
         </tr>
         {% endfor %}
       </tbody>
