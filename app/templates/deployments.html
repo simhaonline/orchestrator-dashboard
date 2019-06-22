@@ -79,7 +79,7 @@
              {% set ar.found = true %}
         {% endif %}
         <tr>
-            <th scope="row">{{deployment.uuid}}</th>
+            <th scope="row"><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></th>
             <td style="vertical-align: center !important"
             {% if "COMPLETE" in deployment.status %}
             class="table-success"
