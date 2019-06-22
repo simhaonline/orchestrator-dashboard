@@ -587,7 +587,6 @@ def deptemplate(depid=None):
 
     template = response.text
     return render_template('deptemplate.html', template=template)
-#
 
 
 @app.app.route('/output/<depid>')
@@ -607,7 +606,7 @@ def depoutput(depid=None):
             output = output[:p] + '\n' + output[p:]
         inp = json.dumps(dep['inputs'])
         links = json.dumps(dep['links'])
-        return render_template('depoutput.html', input=inp, output=output, links=links)
+        return render_template('depoutput.html', deployment=dep, input=inp, output=output, links=links)
 
 
 @app.app.route('/templatedb/<depid>')

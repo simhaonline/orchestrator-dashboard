@@ -3,16 +3,59 @@
 {% block content %}
 
 <div class="container">
-    <h1>INPUT</h1>
-    <pre>{{ input | safe }}</pre>
-    <br>
-    <h1>OUTPUT</h1>
-    <pre>{{ output | safe }}</pre>
-    <br>
-    <h1>LINKS</h1>
-    <pre>{{ links | safe }}</pre>
-    <br>
-    <button type=button class="btn btn-small btn-default" onclick="history.back()">
-             <span class="fas fa-arrow-left mr-2"></span> Back</button>
+
+  <br>
+
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <div class="row">
+        <div class="col-md-6">
+          <!-- Title -->
+          <h4 class="font-weight-bold text-primary">{{ deployment.uuid }}</h4>
+        </div>
+        <div class="col-md-6 text-right">
+          <!-- Button -->
+          <button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+        </div>
+      </div> <!-- / .row -->
+    </div>
+
+    <div class="card-body">
+
+      <!-- start tabs creation section -->
+      <ul class="nav nav-tabs">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Status</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#InputValues">Input values</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#OutputValues">Output values</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#Links">Links</a></li>
+      </ul>
+
+
+      <div class="tab-content">
+        <div class="tab-pane fade show active" id=DeploymentStatus>
+          <br>
+          <p><b>STATUS</b> {{deployment.status}}</p>
+          {% if deployment.statusReason %}
+          <p><b>ERROR MSG</b> {{deployment.statusReason}}</p>
+          {% endif %}
+          <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
+          <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
+          <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
+        </div>
+        <div class="tab-pane fade" id="InputValues">
+          <pre>{{ input | safe }}</pre>
+        </div>
+        <div class="tab-pane fade" id="OutputValues">
+          <pre>{{ output | safe }}</pre>
+          <hr/>
+          <button type=button class="btn btn-small btn-outline-danger"><span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase</button>
+        </div>
+        <div class="tab-pane fade" id="Links">
+          <pre>{{ links | safe }}</pre>
+        </div>
+      </div>
+
+    </div>
+
 </div>
 {% endblock %}
