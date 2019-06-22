@@ -80,15 +80,15 @@
         {% endif %}
         <tr>
             <th scope="row"><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></th>
-            <td style="vertical-align: center !important"
+            <td style='text-align:center !important'>
             {% if "COMPLETE" in deployment.status %}
-            class="table-success"
+            <span class="badge badge-pill badge-success"/>
             {% elif "FAIL" in deployment.status %}
-            class="table-danger"
+            <span class="badge badge-pill badge-danger"/>
             {% else %}
-            class="table-warning"
+            <span class="badge badge-pill badge-warning"/>
             {% endif %}
-            >{{deployment.status}}</td>
+            {{deployment.status}}</td>
             <td>{{deployment.additionaldescription}}</td>
             <td>{{deployment.updateTime}}</td>
             <td>{{deployment.creationTime}}</td>
