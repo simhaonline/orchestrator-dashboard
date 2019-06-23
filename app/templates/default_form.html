@@ -1,11 +1,17 @@
-<!-- start tabs creation section -->
-<ul class="nav nav-tabs">
-  <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#InputValues">Input Values</a></li>
-  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#Advanced">Advanced</a></li>
-</ul>
-<!-- end tab creation section -->
-
 <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
+
+  <div class="form-group">
+    <label for="additional_description">Instance description</label>
+    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Additional description" value="" >
+  </div>
+
+  <!-- start tabs creation section -->
+  <ul class="nav nav-tabs">
+    <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#InputValues">Input Values</a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#Advanced">Advanced</a></li>
+  </ul>
+  <!-- end tab creation section -->
+
   <div class="tab-content">
 
     <!-- inputs -->
