@@ -58,7 +58,7 @@
             {% endif %}
 
             <div class="form-group">
-                <label for="additional_description">Additional description</label>
+                <label for="additional_description">Instance description</label>
                 <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Additional description" value="" >
             </div>
 
@@ -79,7 +79,9 @@
 </style>
 <script>
 $(document).ready(function() {
-    $('.js-example-basic-single').select2();
+    $('.js-example-basic-single').select2({
+      width: '100%' // https://github.com/select2/select2/issues/4220
+    });
 });
 </script>
 

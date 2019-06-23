@@ -55,6 +55,8 @@ for path, subdirs, files in os.walk(toscaDir):
             if name[0] != '.':
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
+tosca_pars_dir = app.app.config.get('TOSCA_PARAMETERS_DIR')
+
 orchestratorUrl = app.app.config.get('ORCHESTRATOR_URL')
 slamUrl = app.app.config.get('SLAM_URL')
 cmdbUrl = app.app.config.get('CMDB_URL')
@@ -662,13 +664,36 @@ def depcreate():
             if 'inputs' in template['topology_template']:
                 inputs = template['topology_template']['inputs']
 
+            ## add parameters code here
+            enable_config_form = False
+            tabs={}
+            if tosca_pars_dir:
+              tosca_pars_path = tosca_pars_dir + "/" # this has to be reassigned here because is local.
+              for path, subdirs, files in os.walk(tosca_pars_path):
+                for name in files:
+                  if fnmatch(name, os.path.splitext(selected_tosca)[0]+".parameters.yml") or fnmatch(name, os.path.splitext(selected_tosca)[0]+".parameters.yaml"):
+                    # skip hidden files
+                    if name[0] != '.':
+                      tosca_pars_file = os.path.join(path, name)
+                      with io.open(tosca_pars_file) as pars_file:
+                        enable_config_form = True
+                        pars_data = yaml.load(pars_file)
+                        inputs = pars_data["inputs"]
+                        if( "tabs" in pars_data ): tabs = pars_data["tabs"]
+
             description = "N/A"
             if 'description' in template:
                 description = template['description']
 
             slas = get_slas(access_token)
-            return render_template('createdep.html', templates=toscaTemplates, selectedTemplate=selected_tosca,
-                                   description=description, inputs=inputs, slas=slas)
+            return render_template('createdep.html',
+                                   templates=toscaTemplates,
+                                   selectedTemplate=selected_tosca,
+                                   description=description,
+                                   inputs=inputs,
+    	                           slas=slas,
+                                   enable_config_form=enable_config_form,
+                                   tabs=tabs)
 
 
 def add_sla_to_template(template, sla_id):
