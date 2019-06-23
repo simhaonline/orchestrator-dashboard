@@ -22,9 +22,11 @@
 
     <div class="card-body">
 
+      <p><b>Description:</b> {{deployment.additionaldescription}} </p>
+
       <!-- start tabs creation section -->
       <ul class="nav nav-tabs">
-        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Status</a></li>
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#DeploymentStatus">Overview</a></li>
         <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#InputValues">Input values</a></li>
         <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#OutputValues">Output values</a></li>
         <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#Links">Links</a></li>
@@ -41,14 +43,16 @@
           <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
           <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
+          <hr/>
+          <button type=button class="btn btn-small btn-outline-success"><span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase</button>
         </div>
         <div class="tab-pane fade" id="InputValues">
-          <pre>{{ input | safe }}</pre>
+          <br>
+          <p id="demo"></p>
         </div>
         <div class="tab-pane fade" id="OutputValues">
+          <br>
           <pre>{{ output | safe }}</pre>
-          <hr/>
-          <button type=button class="btn btn-small btn-outline-danger"><span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase</button>
         </div>
         <div class="tab-pane fade" id="Links">
           <pre>{{ links | safe }}</pre>
@@ -58,4 +62,15 @@
     </div>
 
 </div>
+
+<p id="demo"></p>
+
+<script>
+  var myObj, x;
+  myObj = {{ input | safe }}
+  for (x in myObj) {
+    document.getElementById("demo").innerHTML += x + ": " + myObj[x] + "<br>";
+  }
+</script>
+
 {% endblock %}
