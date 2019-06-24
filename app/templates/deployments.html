@@ -57,16 +57,16 @@
         <div class="card-body">
 
     <div class="table-responsive">
-    <table class="table table-bordered" id="tableUserDeployments" width="100%" cellspacing="0">
+    <table class="table" id="tableUserDeployments" width="100%" cellspacing="0">
     <!--Table head-->
       <thead>
         <tr>
-          <th>uuid</th>
+          <th>Instance identifier</th>
           <th>Status</th>
           <th>Description</th>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th>Deployed At</th>
+          <th>Creation time</th>
+          <!--th>Updated At</th-->
+          <!--th>Deployed At</th-->
           <th>Endpoint</th>
           <th>Actions</th>
         </tr>
@@ -80,7 +80,7 @@
         {% endif %}
         <tr>
             <th scope="row"><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></th>
-            <td style='text-align:center !important'>
+            <td>
             {% if "COMPLETE" in deployment.status %}
             <span class="badge badge-pill badge-success"/>
             {% elif "FAIL" in deployment.status %}
@@ -90,14 +90,14 @@
             {% endif %}
             {{deployment.status}}</td>
             <td>{{deployment.additionaldescription}}</td>
-            <td>{{deployment.updateTime}}</td>
             <td>{{deployment.creationTime}}</td>
-            <td>{{deployment.cloudProviderName}}</td>
+            <!--td>{{deployment.updateTime}}</td-->
+            <!--td>{{deployment.cloudProviderName}}</td-->
             <td>{{deployment.endpoint}}</td>
-            <td style='text-align:center'>
+            <td>
               <div class="btn-group">
                 <!-- DELETE -->
-                <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#delete_confirm_{{deployment.uuid}}">
+                <button type="button" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#delete_confirm_{{deployment.uuid}}">
                   <span class="fas fa-trash-alt mr-2"></span>Delete instance
                 </button>
                 <!-- Modal DELETE-->
