@@ -15,86 +15,55 @@
     {% endif %}
     {% endwith %}
 
-    <br/>
-    <div class=text-left>
-        <h3>New deployment</h3>
-        <br>
-    </div>
-    <form name="tosca_template" action="{{ url_for('depcreate') }}" method='POST'>
-        <div class="form-group">
-            <label for="tosca_template">Select TOSCA Template:</label>
-            <select class="js-example-basic-single" name="tosca_template" id ="tosca_template">
-                <!-- <option value="" selected disabled>-->
-                <!-- <option hidden selected disabled >Select a template...</option> -->
-                {% for tosca in templates %}
-                <option name="tosca_template" {%if selectedTemplate is defined %}{% if tosca == selectedTemplate %}selected{% endif %}{% endif %}>{{tosca}}</option>
-                {% endfor %}
-            </select>
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">New deployment</h4>
         </div>
-        <button type="submit" class="btn btn-success">Configure</button>
-        {% if not selectedTemplate is defined %}
-        <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('home') }}'">
-             <span class="fas fa-arrow-left mr-2"></span> Back</button>
-        {% endif %}
-    </form>
+
+        <div class="card-body">
+            <form name="tosca_template" action="{{ url_for('depcreate') }}" method='POST'>
+                <div class="form-group">
+                    <label for="tosca_template">Select TOSCA Template:</label>
+                    <select class="js-example-basic-single js-states form-control" name="tosca_template" id ="tosca_template">
+                        <!-- <option value="" selected disabled>-->
+                        <!-- <option hidden selected disabled >Select a template...</option> -->
+                        {% for tosca in templates %}
+                        <option name="tosca_template" {%if selectedTemplate is defined %}{% if tosca == selectedTemplate %}selected{% endif %}{% endif %}>{{tosca}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-success">Configure</button>
+                {% if not selectedTemplate is defined %}
+                <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('home') }}'">
+                     <span class="fas fa-arrow-left mr-2"></span> Back</button>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
 
     {% if selectedTemplate is defined %}
-    <h1> Template: {{selectedTemplate}} </h1>
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">Template: {{selectedTemplate}}</h4>
+        </div>
 
-    {% if description is defined %}
-    <div class="alert alert-info">
-        <strong>Description:</strong> {{description}}
+        <div class="card-body">
+            {% if description is defined %}
+            <div class="alert alert-info">
+                <strong>Description:</strong> {{description}}
+            </div>
+            {% endif %}
+
+            {% if enable_config_form %}
+                {% include 'config_form.html' %}
+            {% else %}
+                {% include 'default_form.html' %}
+            {% endif %}
+        </div>
     </div>
-    {% endif %}
-    
-    {% if inputs|length > 0 %}
-    <h2>Set input values:</h2>
-    {% endif %}
-    <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
-        <input type="hidden" id="noinputId" name="noinput" value="">
-        {% if inputs|length > 0 %}
-        {% for key, value in inputs.items() %}
-        <div class="form-group">
-            <label for="{{key}}">{{key}}</label>
-            <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control"
-              id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" />
-            <span id="help{{key}}" class="help-block">{{value.description}}</span>
-        </div>
-        {% endfor %}
-        {% endif %}
-        <div class="form-group">
-            <label for="additional_description">Additional description</label>
-            <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Additional description" value="" >
-	    </div>
-        <div class="form-group">
-            <p><h2>Configure scheduling:</h2></p>
-            <label class="radio-inline">
-                <input id="autosched" type="radio" name="extra_opts.schedtype" value="auto" checked>Auto</label>
-	        <label class="radio-inline">
-                <input id="mansched" type="radio" name="extra_opts.schedtype" value="man">Manual</label>
-	    </div>
-	    <div id="manschedConf" class="form-group">
-            <p></p>
-            <label>Select a provider:</label>
-            <select class="form-control" id="selectSLA" name="extra_opts.selectedSLA">
-            {% for sla in slas %}
-                <option name="selectedSLA" value={{sla.id}}>{{sla.sitename}}: {{sla.service_type}}</option>
-            {% endfor %}
-            </select>
-        </div>
-        <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="keepLastAttempt" name="extra_opts.keepLastAttempt">
-            <label class="form-check-label" for="keepLastAttempt">Do not delete the deployment in case of failure</label>
-        </div>
-        <div class="form-check">
-            <input type="checkbox" class="form-check-input" id="sendEmailFeedback" name="extra_opts.sendEmailFeedback" checked="checked">
-            <label class="form-check-label" for="sendEmailFeedback">Send a confirmation email when complete</label>
-        </div>
-        <br/>
-        <button type="submit" class="btn btn-success submitBtn">Deploy!</button>
-        <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('home') }}'">
-             <span class="fas fa-arrow-left mr-2"></span> Back</button>
-    </form>
     {% endif %}
 </div>
 
@@ -103,9 +72,12 @@
   display: none;
 }
 </style>
+
 <script>
 $(document).ready(function() {
-    $('.js-example-basic-single').select2();
+    $('.js-example-basic-single').select2({
+      width: '100%' // https://github.com/select2/select2/issues/4220
+    });
 });
 </script>
 

@@ -36,8 +36,8 @@
 </style>
 
 
-
-<div class="container-fluid" >
+<br>
+<div class="container-fluid">
     {% set ar = namespace(found=false) %}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
@@ -49,26 +49,26 @@
     {% endfor %}
     {% endif %}
     {% endwith %}
-    <div class=text-left>
-        <h3>My deployments:</h3>
-        <br>
-    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="m-0 font-weight-bold text-primary">My deployments</h4>
+        </div>
+        <div class="card-body">
 
     <div class="table-responsive">
-    <table id="tableUserDeployments" class="table table-condensed table-striped table-sm table-bordered" >
+    <table class="table" id="tableUserDeployments" width="100%" cellspacing="0">
     <!--Table head-->
       <thead>
         <tr>
-          <th>uuid</th>
+          <th>Instance identifier</th>
           <th>Status</th>
           <th>Description</th>
-          <th>Created At</th>
-          <th>Updated At</th>
-          <th>Deployed At</th>
+          <th>Creation time</th>
+          <!--th>Updated At</th-->
+          <!--th>Deployed At</th-->
           <th>Endpoint</th>
-          <th class="no-sort"></th>
-          <th class="no-sort"></th>
-          <th class="no-sort"></th>
+          <th>Actions</th>
         </tr>
       </thead>
       <!--Table head-->
@@ -79,29 +79,60 @@
              {% set ar.found = true %}
         {% endif %}
         <tr>
-            <th scope="row">{{deployment.uuid}}</th>
-            <td style="vertical-align: center !important"
+            <th scope="row"><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></th>
+            <td>
             {% if "COMPLETE" in deployment.status %}
-            class="success"
+            <span class="badge badge-pill badge-success"/>
             {% elif "FAIL" in deployment.status %}
-            class="danger"
+            <span class="badge badge-pill badge-danger"/>
             {% else %}
-            class="warning"
+            <span class="badge badge-pill badge-warning"/>
             {% endif %}
-            >{{deployment.status}}</td>
+            {{deployment.status}}</td>
             <td>{{deployment.additionaldescription}}</td>
-            <td>{{deployment.updateTime}}</td>
             <td>{{deployment.creationTime}}</td>
-            <td>{{deployment.cloudProviderName}}</td>
+            <!--td>{{deployment.updateTime}}</td-->
+            <!--td>{{deployment.cloudProviderName}}</td-->
             <td>{{deployment.endpoint}}</td>
-            <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show output"></i></button></td>
-            <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplate', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i></button></td>
-            <td style='text-align:center'><button class='btn' onclick='confirmDelete((ans)=>{if(ans){location.href="{{ url_for('depdel', depid=deployment.uuid) }}"}});'><i class='fas fa-trash mr-2 grey-text' aria-hidden='true' title="Delete deployment"></i></button></td>
+            <td>
+              <div class="btn-group">
+                <!-- DELETE -->
+                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#delete_confirm_{{deployment.uuid}}">
+                  <span class="fas fa-trash-alt mr-2"></span>Delete
+                </button>
+                <!-- Modal DELETE-->
+                <div class="modal fade" id="delete_confirm_{{deployment.uuid}}">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5 class="modal-title" id="delete_confirm_label_{{deployment.uuid}}">Confirm deployment deletion</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                      </div>
+                      <div class="modal-body">
+                        Do you really want to delete the deployment {{deployment.uuid}}?
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <a type="button" class="btn btn-danger" href="{{ url_for("depdel", depid=deployment.uuid) }}">Delete deployment</a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+                  <span class="sr-only">Toggle Dropdown</span>
+                </button>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="{{ url_for('depoutput', depid=deployment.uuid) }}"><span class="fas fa-folder-open mr-2 grey-text"></span>Details</a>
+                  <a class="dropdown-item" href="{{ url_for('deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
+              </div>
+            </td>
         </tr>
         {% endfor %}
       </tbody>
       <!--Table body-->
     </table>
+    </div>
+    </div>
     </div>
     <br><br>
 </div>
@@ -154,7 +185,7 @@ function confirmDialog(message, handler){
 <script>
     $('#tableUserDeployments').dataTable( {
         initComplete: function(){
-          $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-small btn-default' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-small btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
+          $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-outline-secondary' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
         },
         "responsive": true,
         "order": [],

@@ -14,8 +14,25 @@
 
 </style>
 
-<div class="container" style="width: 1280px !important;">
-    <h2>User data:&nbsp;{{user[1]}}</h2>
+<div class="container">
+
+    <br>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Title -->
+              <h4 class="font-weight-bold text-primary">User data&nbsp;{{user[1]}}</h4>
+            </div>
+            <div class="col-md-6 text-right">
+              <!-- Button -->
+              <button type="submit" class="btn btn-small btn-primary"><span class="fas fa-download mr-2"></span> Update</button>
+              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+            </div>
+          </div> <!-- / .row -->
+        </div>
+        <div class="card-body">
 
     <form id="user_data" action="{{ url_for('show_user', subject=user.sub) }}" method="post">
       <div class="form-group">
@@ -59,11 +76,10 @@
         <input type="hidden" name="active" value="{{user.active}}"/>
       {% endif %}
       <br/>
-      <button type="submit" class="btn btn-small btn-primary"><span class="fas fa-download mr-2"></span> Update</button>
-      <button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('show_users') }}'">
-             <span class="fas fa-arrow-left mr-2"></span> Back</button>
     </form>
 
+</div>
+</div>
 </div>
 
 

@@ -21,12 +21,29 @@
 
 </style>
 
-<div class="container-fluid" >
-    <h2>Deployments for:&nbsp;{{user.name}}</h2>
+<div class="container-fluid">
+
+    <br>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Title -->
+              <h4 class="font-weight-bold text-primary">Deployments for:&nbsp;{{user.name}}</h4>
+            </div>
+            <div class="col-md-6 text-right">
+              <!-- Button -->
+              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for("getslas") }}'"><span class="fas fa-sync"></span> Refresh</button>
+              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+            </div>
+          </div> <!-- / .row -->
+        </div>
+        <div class="card-body">
 
 <!--Table-->
 <div class="table-responsive">
-<table id="tableDeployments" class="table table-sm table-condensed table-striped table-bordered" >
+<table id="tableDeployments" class="table table-bordered" width="100%" cellspacing="0">
 <!--Table head-->
   <thead>
     <tr>
@@ -64,8 +81,8 @@
         <td>{{deployment.cloudProviderName}}</td>
         <td>{{deployment.physicalId}}</td>
         <td>{{deployment.endpoint}}</td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i></button></td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i></button></td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
         <td style='text-align:center'>
         {% if deployment.remote == 1 %}
             <i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">
@@ -77,10 +94,9 @@
   <!--Table body-->
 </table>
 </div>
-<br><br>
-<button type=button class="btn btn-small btn-default" onclick="location.href='{{ url_for('show_users') }}'">
-                      <span class="fas fa-arrow-left mr-2"></span> Back</button>
-
+</div>
+</div>
+</div>
 </div>
 
 
