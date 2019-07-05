@@ -52,9 +52,22 @@
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h4 class="m-0 font-weight-bold text-primary">My deployments</h4>
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Title -->
+              <h4 class="font-weight-bold text-primary">My deployments</h4>
+            </div>
+            <div class="col-md-6 text-right">
+              <!-- Button -->
+              <button class="btn btn-small btn-outline-secondary" onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>
+              <button class="btn btn-small btn-primary" onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button>
+
+            </div>
+          </div> <!-- / .row -->
         </div>
         <div class="card-body">
+
+
 
     <div class="table-responsive">
     <table class="table" id="tableUserDeployments" width="100%" cellspacing="0">
@@ -184,9 +197,9 @@ function confirmDialog(message, handler){
 
 <script>
     $('#tableUserDeployments').dataTable( {
-        initComplete: function(){
+/*        initComplete: function(){
           $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-outline-secondary' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
-        },
+        },*/
         "responsive": true,
         "order": [],
         "columnDefs": [ {

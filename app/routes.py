@@ -13,8 +13,15 @@ from fnmatch import fnmatch
 from hashlib import md5
 import mysql.connector
 from dateutil import parser
+import uuid as uuid_generator
+
+# Hashicorp vault support integration
+from app.vault_integration import VaultIntegration
 
 iam_base_url = app.app.config['IAM_BASE_URL']
+iam_client_id = app.app.config.get('IAM_CLIENT_ID')
+iam_client_secret = app.app.config.get('IAM_CLIENT_SECRET')
+
 issuer = iam_base_url
 if not issuer.endswith('/'):
     issuer += '/'
@@ -61,6 +68,9 @@ orchestratorUrl = app.app.config.get('ORCHESTRATOR_URL')
 slamUrl = app.app.config.get('SLAM_URL')
 cmdbUrl = app.app.config.get('CMDB_URL')
 
+vault_url = app.app.config.get('VAULT_URL')
+vault_secrets_path = app.app.config.get('VAULT_SECRETS_PATH')
+vault_bound_audience = app.app.config.get('VAULT_BOUND_AUDIENCE')
 
 @app.app.route('/settings')
 def show_settings():
@@ -749,6 +759,11 @@ def createdep():
 
             inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
 
+            if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True':
+              app.app.logger.debug("Storage encryption enabled, appending wrapping token.")
+              inputs['vault_wrapping_token'] = create_vault_wrapping_token(access_token)
+              inputs['vault_secret_path'] = session['userid'] + '/' + str(uuid_generator.uuid4())
+
             app.app.logger.debug("Parameters: " + json.dumps(inputs))
 
             payload = {"template": yaml.dump(template, default_flow_style=False), "parameters": inputs,
@@ -809,6 +824,16 @@ def createdep():
     except Exception as e:
         flash("Error submitting deployment:" + str(e) + ". Please retry")
         return redirect(url_for('home'))
+
+def create_vault_wrapping_token(access_token):
+
+    vault = VaultIntegration( vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience, access_token, vault_secrets_path )
+
+    auth_token = vault.get_auth_token()
+
+    wrapping_token = vault.get_wrapping_token( "2h", auth_token, "write_only", "12h", "12h")
+
+    return wrapping_token
 
 
 @app.app.route('/logout')
@@ -908,3 +933,39 @@ def callback():
     resp.mimetype = 'application/json'
 
     return resp
+
+
+@app.app.route('/read_secret_from_vault/<depid>')
+def read_secret_from_vault(depid=None):
+
+    if not app.iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+
+    try:
+        access_token = app.iam_blueprint.token['access_token']
+
+    except Exception as e:
+        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+        return redirect(url_for('home'))
+
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+      vault = VaultIntegration( vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience, access_token, vault_secrets_path )
+
+      auth_token = vault.get_auth_token()
+
+      read_token = vault.get_token( auth_token, "read_only", "12h", "12h" )
+
+      # retrieval of secret_path and secret_key from the db goes here
+      secret_path = "20340b0b-c07f-46e0-a9c6-1f987ba9ff85/5b68fbb5-d251-4820-b003-94b8ae2405cd"
+      user_key = "luks"
+
+      response_output = vault.read_secret( read_token, secret_path, user_key )
+
+      vault.revoke_token(auth_token)
+
+      return response_output

@@ -44,7 +44,29 @@
           <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
           <hr/>
-          <button type=button class="btn btn-small btn-outline-success"><span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase</button>
+          <button type=button class="btn btn-small btn-outline-success" id="button1" onclick="getVaultSecret( href='{{ url_for('read_secret_from_vault', depid='11e99696-e14e-8185-a6d8-024283ff312a') }}' )">
+            <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
+          </button>
+          <!-- Modal Retrieve luks passphrase-->
+          <div class="modal fade" id="newModal">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="get_luks_passwd_label_{{deployment.uuid}}">LUKS passphrase</h5>
+                  <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                <input id="password" class="form-control" type="password">
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                  <button type="button" class="btn btn-success" onclick="passwordToggle()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
         </div>
         <div class="tab-pane fade" id="InputValues">
           <br>
@@ -71,6 +93,47 @@
   for (x in myObj) {
     document.getElementById("demo").innerHTML += x + ": " + myObj[x] + "<br>";
   }
+</script>
+
+<script>
+  $('#password').password();
+</script>
+
+<script>
+function passwordToggle() {
+  var copyText = document.getElementById("password");
+  copyText.select();
+  document.execCommand("copy");
+}
+</script>
+
+<script>
+
+async function getVaultSecret(url)
+{
+  console.log( url);
+  let secret = "secret placeholder";
+
+  let  response = await fetch(url)
+  let result = await response;
+  secret = await response.text();
+
+  fillModal(secret)
+
+};
+
+function fillModal(secret)
+{
+    $(document).ready(function(){
+      $("#newModal").on('show.bs.modal', function () {
+        var modal = $(this)
+        modal.find('.modal-body input').val( secret );
+      });
+      $("#newModal").modal("show");
+    });
+
+}
+
 </script>
 
 {% endblock %}
