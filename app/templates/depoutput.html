@@ -59,11 +59,11 @@
                   <button type="button" class="close" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
-                <input id="password" class="form-control" type="password">
+                <input id="luksPassphrase" class="form-control" type="password">
                 </div>
                 <div class="modal-footer">
                   <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                  <button type="button" class="btn btn-success" onclick="passwordToggle()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button>
+                  <!--button type="button" class="btn btn-success" onclick="copyToClipboard()" data-dismiss="modal"><span class="fas fa-copy"></span> Copy to clipboard</button-->
                 </div>
               </div>
             </div>
@@ -100,12 +100,12 @@
 </script>
 
 <script>
-  $('#password').password();
+  $('#luksPassphrase').password();
 </script>
 
 <script>
-function passwordToggle() {
-  var copyText = document.getElementById("password");
+function copyToClipboard() {
+  var copyText = document.getElementById("luksPassphrase");
   copyText.select();
   document.execCommand("copy");
 }
