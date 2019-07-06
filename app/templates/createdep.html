@@ -33,7 +33,7 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn btn-success">Configure</button>
+                <button type="submit" id="loadToscaBtn" class="btn btn-success">Configure</button>
                 {% if not selectedTemplate is defined %}
                 <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('home') }}'">
                      <span class="fas fa-arrow-left mr-2"></span> Back</button>
@@ -82,6 +82,14 @@ $(document).ready(function() {
 </script>
 
 <script>
+
+$(document).ready(function () {
+    $("#loadToscaBtn").click(function () {
+        // add spinner to button
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
+    });
+});
+
 $(document).ready(function () {
     $("#depSubmit").submit(function () {
         //disable button on click
@@ -90,7 +98,6 @@ $(document).ready(function () {
         $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
         return true;
     });
-
 });
 
 $(document).ready(function () {
