@@ -143,47 +143,6 @@
 {% endif %}
 
 <script>
-function confirmDelete(handler){
-    confirmDialog('Do you really want to delete your deployment?', handler);
-}
-
-function confirmDialog(message, handler){
-  $('<div class="modal fade" id="yesNoModal" role="dialog">'+
-    '<div class="modal-dialog">'+
-    '<div class="modal-content">'+
-    '<div class="modal-body" style="padding:10px;">'+
-    '<h4 class="text-center">'+message+'</h4>'+
-    '<div class="text-center">'+
-    '<a class="btn btn-secondary btn-yes">Yes</a>'+
-    '<a class="btn btn-primary btn-no">No</a>'+
-    '</div></div></div></div></div>').appendTo('body');
-
-  //Trigger the modal
-  $("#yesNoModal").modal({
-     backdrop: 'static',
-     keyboard: false
-  });
-
-   //Pass true to a callback function
-   $(".btn-yes").click(function () {
-       handler(true);
-       $("#yesNoModal").modal("hide");
-   });
-
-   //Pass false to callback function
-   $(".btn-no").click(function () {
-       handler(false);
-       $("#yesNoModal").modal("hide");
-   });
-
-   //Remove the modal once it is closed.
-   $("#yesNoModal").on('hidden.bs.modal', function () {
-      $("#yesNoModal").remove();
-   });
-}
-</script>
-
-<script>
     $('#tableUserDeployments').dataTable( {
         initComplete: function(){
           $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-outline-secondary' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
