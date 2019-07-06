@@ -616,9 +616,10 @@ def depoutput(depid=None):
         if p != -1:
             p += 10
             output = output[:p] + '\n' + output[p:]
-        inp = json.dumps(dep['inputs'])
+        #inp = json.dumps(dep['inputs'])
+        inp = dep['inputs'] # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
         links = json.dumps(dep['links'])
-        return render_template('depoutput.html', deployment=dep, input=inp, output=output, links=links)
+        return render_template('depoutput.html', deployment=dep, inputs=inp, outputs=output, links=links)
 
 
 @app.app.route('/templatedb/<depid>')
@@ -650,6 +651,18 @@ def depdel(depid=None):
 
     return redirect(url_for('home'))
 
+def delete_secret_from_vault(access_token, secret_path):
+
+  vault = VaultIntegration( vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience, access_token, vault_secrets_path )
+
+  auth_token = vault.get_auth_token()
+
+  delete_token = vault.get_token( auth_token, "delete_only", "12h", "12h" )
+
+  # retrieval of secret_path and secret_key from the db goes here
+  secret_path = "20340b0b-c07f-46e0-a9c6-1f987ba9ff85/5b68fbb5-d251-4820-b003-94b8ae2405cd"
+
+  vault.delete_secret( delete_token, secret_path )
 
 @app.app.route('/create', methods=['GET', 'POST'])
 def depcreate():

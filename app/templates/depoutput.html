@@ -43,6 +43,9 @@
           <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
           <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
+
+          {% for key, value in inputs.items() %}
+          {% if 'storage_encryption' in key and value == 'True' %}	
           <hr/>
           <button type=button class="btn btn-small btn-outline-success" id="button1" onclick="getVaultSecret( href='{{ url_for('read_secret_from_vault', depid='11e99696-e14e-8185-a6d8-024283ff312a') }}' )">
             <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
@@ -65,7 +68,8 @@
               </div>
             </div>
           </div>
-
+          {% endif %}
+          {% endfor %}
 
         </div>
         <div class="tab-pane fade" id="InputValues">
@@ -74,7 +78,7 @@
         </div>
         <div class="tab-pane fade" id="OutputValues">
           <br>
-          <pre>{{ output | safe }}</pre>
+          <pre>{{ outputs | safe }}</pre>
         </div>
         <div class="tab-pane fade" id="Links">
           <pre>{{ links | safe }}</pre>
@@ -89,7 +93,7 @@
 
 <script>
   var myObj, x;
-  myObj = {{ input | safe }}
+  myObj = {{ inputs | safe }}
   for (x in myObj) {
     document.getElementById("demo").innerHTML += x + ": " + myObj[x] + "<br>";
   }
