@@ -84,9 +84,13 @@ $(document).ready(function() {
 <script>
 $(document).ready(function () {
     $("#depSubmit").submit(function () {
+        //disable button on click
         $(".submitBtn").attr("disabled", true);
+        // add spinner to button
+        $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
         return true;
     });
+
 });
 
 $(document).ready(function () {

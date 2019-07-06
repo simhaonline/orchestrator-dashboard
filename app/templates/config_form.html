@@ -58,8 +58,5 @@
     </div>
 
   <br>
-  <button type="submit" class="btn btn-success submitBtn">Submit</button>
-  <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('home') }}'">
-    <span class="fas fa-arrow-left mr-2"></span> Back</button>
-
+  {% include 'submit_btn.html' %}
 </form>
