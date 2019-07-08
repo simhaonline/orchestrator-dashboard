@@ -1,42 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<style>
-.center {
-  text-align: center;
-}
-
-.panel {
-  /* Add shadows to create the "card" effect */
-  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-  transition: 0.3s;
-}
-
-.panel-body {
-  font-family: Tahoma;
-}
-
-.table-condensed{
-  font-size: 14px;
-}
-
-.table tbody td, th {
-  vertical-align: middle !important;
-}
-
-.custom-toolbar {
-    display:inline;
-}
-
-.dataTables_length {
-    display: inline;
-}
-
-
-</style>
-
-
-<br>
 <div class="container-fluid">
     {% set ar = namespace(found=false) %}
     {% with messages = get_flashed_messages() %}
@@ -50,12 +14,23 @@
     {% endif %}
     {% endwith %}
 
+    <br>
+
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-          <h4 class="font-weight-bold text-primary">My deployments</h4>
+          <div class="row">
+            <div class="col-md-6">
+              <!-- Title -->
+              <h4 class="font-weight-bold text-primary">My deployments</h4>
+            </div>
+            <div class="col-md-6 text-right">
+              <!-- Button -->
+              <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('home') }}"'><span class='fas fa-sync mr-2'></span> Refresh</button>
+              <button type=button class='btn btn-primary' onclick='location.href="{{ url_for('depcreate') }}"'><span class='fas fa-plus mr-2'></span> New deployment</button>
+            </div>
+          </div> <!-- / .row -->
         </div>
         <div class="card-body">
-
 
     <div class="table-responsive">
     <table class="table" id="tableUserDeployments" width="100%" cellspacing="0">
@@ -154,9 +129,6 @@ $(document).ready(function () {
 
 <script>
     $('#tableUserDeployments').dataTable( {
-        initComplete: function(){
-          $("<div class='custom-toolbar'>&nbsp;&nbsp;&nbsp;<button type=button class='btn btn-outline-secondary' onclick='location.href=\"{{ url_for('home') }}\"'><span class='fas fa-sync mr-2'></span> Refresh</button>&nbsp;<button type=button class='btn btn-primary' onclick='location.href=\"{{ url_for('depcreate') }}\"'><span class='fas fa-plus mr-2'></span> New deployment</button></div>").insertAfter("#tableUserDeployments_length");
-        },
         "responsive": true,
         "order": [],
         "columnDefs": [ {
@@ -165,17 +137,6 @@ $(document).ready(function () {
          }],
         "order": [[ 3, "desc" ]]
     });
-
-// Initialize tooltip component
-$(function () {
-  $('[data-toggle="tooltip"]').tooltip()
-})
-
-// Initialize popover component
-$(function () {
-  $('[data-toggle="popover"]').popover()
-})
-
 </script>
 
 {% endblock %}
