@@ -46,7 +46,7 @@ class VaultIntegration:
     response = requests.post(login_url, data=data, verify=False)
 
     deserialized_response = json.loads(response.text)
-    print(deserialized_response)
+
     self.vault_auth_token = deserialized_response["auth"]["client_token"]
 
   #______________________________________
