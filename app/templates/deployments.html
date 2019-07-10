@@ -73,7 +73,7 @@
             <td>
               <div class="btn-group">
                 <!-- DELETE -->
-                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#delete_modal">
+                <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#delete_confirm_{{deployment.uuid}}" data-backdrop="static" data-keyboard="false">
                   <span class="fas fa-trash-alt mr-2"></span>Delete
                 </button>
                 <button type="button" class="btn btn-danger dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
@@ -87,7 +87,7 @@
         </tr>
         <!-- Modal DELETE -->
         <!-- Put modal here to avoid problem with table collapse -->
-        <div class="modal fade" id="delete_modal" role="dialog">
+        <div class="modal fade" id="delete_confirm_{{deployment.uuid}}" role="dialog">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
               <div class="modal-header">
