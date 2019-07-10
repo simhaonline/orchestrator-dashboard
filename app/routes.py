@@ -1,4 +1,4 @@
-import app
+from app import app, iam_blueprint, iam_base_url
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -18,18 +18,18 @@ import uuid as uuid_generator
 # Hashicorp vault support integration
 from app.vault_integration import VaultIntegration
 
-iam_base_url = app.app.config['IAM_BASE_URL']
-iam_client_id = app.app.config.get('IAM_CLIENT_ID')
-iam_client_secret = app.app.config.get('IAM_CLIENT_SECRET')
+iam_base_url = app.config['IAM_BASE_URL']
+iam_client_id = app.config.get('IAM_CLIENT_ID')
+iam_client_secret = app.config.get('IAM_CLIENT_SECRET')
 
 issuer = iam_base_url
 if not issuer.endswith('/'):
     issuer += '/'
-db_host = app.app.config['DB_HOST']
-db_port = app.app.config['DB_PORT']
-db_user = app.app.config['DB_USER']
-db_password = app.app.config['DB_PASSWORD']
-db_name = app.app.config['DB_NAME']
+db_host = app.config['DB_HOST']
+db_port = app.config['DB_PORT']
+db_user = app.config['DB_USER']
+db_password = app.config['DB_PASSWORD']
+db_name = app.config['DB_NAME']
 
 
 def to_pretty_json(value):
@@ -37,7 +37,7 @@ def to_pretty_json(value):
                       indent=4, separators=(',', ': '))
 
 
-app.app.jinja_env.filters['tojson_pretty'] = to_pretty_json
+app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
 
 def avatar(email, size):
@@ -53,7 +53,7 @@ def getdbconnection():
     return cnx
 
 
-toscaDir = app.app.config.get('TOSCA_TEMPLATES_DIR') + "/"
+toscaDir = app.config.get('TOSCA_TEMPLATES_DIR') + "/"
 toscaTemplates = []
 for path, subdirs, files in os.walk(toscaDir):
     for name in files:
@@ -62,27 +62,27 @@ for path, subdirs, files in os.walk(toscaDir):
             if name[0] != '.':
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
-tosca_pars_dir = app.app.config.get('TOSCA_PARAMETERS_DIR')
+tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
 
-orchestratorUrl = app.app.config.get('ORCHESTRATOR_URL')
-slamUrl = app.app.config.get('SLAM_URL')
-cmdbUrl = app.app.config.get('CMDB_URL')
+orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
+slamUrl = app.config.get('SLAM_URL')
+cmdbUrl = app.config.get('CMDB_URL')
 
-vault_url = app.app.config.get('VAULT_URL')
-vault_secrets_path = app.app.config.get('VAULT_SECRETS_PATH')
-vault_bound_audience = app.app.config.get('VAULT_BOUND_AUDIENCE')
+vault_url = app.config.get('VAULT_URL')
+vault_secrets_path = app.config.get('VAULT_SECRETS_PATH')
+vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
 
 
-@app.app.route('/settings')
+@app.route('/settings')
 def show_settings():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
-    return render_template('settings.html', orchestrator_url=orchestratorUrl, iam_url=app.iam_base_url)
+    return render_template('settings.html', orchestrator_url=orchestratorUrl, iam_url=iam_base_url)
 
 
-@app.app.route('/deployments/<subject>')
+@app.route('/deployments/<subject>')
 def show_deployments(subject):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
     if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
@@ -96,7 +96,7 @@ def show_deployments(subject):
     if user is not {}:
         #
         # retrieve deployments from orchestrator
-        access_token = app.iam_blueprint.token['access_token']
+        access_token = iam_blueprint.token['access_token']
 
         headers = {'Authorization': 'bearer %s' % access_token}
 
@@ -159,9 +159,9 @@ def show_deployments(subject):
         return render_template('users.html', users=users)
 
 
-@app.app.route('/user/<subject>', methods=['GET', 'POST'])
+@app.route('/user/<subject>', methods=['GET', 'POST'])
 def show_user(subject):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
     if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
@@ -281,9 +281,9 @@ def get_deployment(uuid):
     return deployment
 
 
-@app.app.route('/users')
+@app.route('/users')
 def show_users():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
     if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
@@ -293,7 +293,7 @@ def show_users():
     return render_template('users.html', users=users)
 
 
-@app.app.route('/login')
+@app.route('/login')
 def login():
     session.clear()
     return render_template('home.html')
@@ -304,7 +304,7 @@ def get_sla_extra_info(access_token, service_id):
     url = cmdbUrl + "/service/id/" + service_id
     response = requests.get(url, headers=headers, timeout=20)
     response.raise_for_status()
-    app.app.logger.info(json.dumps(response.json()['data']['service_type']))
+    app.logger.info(json.dumps(response.json()['data']['service_type']))
 
     service_type = response.json()['data']['service_type']
     sitename = response.json()['data']['sitename']
@@ -320,10 +320,10 @@ def get_slas(access_token):
     headers = {'Authorization': 'bearer %s' % access_token}
     url = slamUrl + "/rest/slam/preferences/" + session['organisation_name']
     response = requests.get(url, headers=headers, timeout=20)
-    app.app.logger.info("SLA response status: " + str(response.status_code))
+    app.logger.info("SLA response status: " + str(response.status_code))
 
     response.raise_for_status()
-    app.app.logger.info("SLA response: " + json.dumps(response.json()))
+    app.logger.info("SLA response: " + json.dumps(response.json()))
     slas = response.json()['sla']
 
     for i in range(len(slas)):
@@ -334,13 +334,13 @@ def get_slas(access_token):
     return slas
 
 
-@app.app.route('/slas')
+@app.route('/slas')
 def getslas():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     try:
-        access_token = app.iam_blueprint.token['access_token']
+        access_token = iam_blueprint.token['access_token']
         slas = get_slas(access_token)
 
     except Exception as e:
@@ -483,10 +483,10 @@ def updatedeploymentsstatus(deployments, userid):
                     cursor.execute(update_cmd)
                     connection.commit()
                 else:
-                    app.app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+                    app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
                     # retrieve template
-                    access_token = app.iam_blueprint.session.token['access_token']
+                    access_token = iam_blueprint.session.token['access_token']
                     headers = {'Authorization': 'bearer %s' % access_token}
 
                     url = orchestratorUrl + "/deployments/" + uuid + "/template"
@@ -564,16 +564,16 @@ def logexception(err):
     filename = f.f_code.co_filename
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, f.f_globals)
-    app.app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
+    app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
 
-@app.app.route('/dashboard/')
-@app.app.route('/')
+@app.route('/dashboard/')
+@app.route('/')
 def home():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
     try:
-        account_info = app.iam_blueprint.session.get("/userinfo")
+        account_info = iam_blueprint.session.get("/userinfo")
 
         if account_info.ok:
             account_info_json = account_info.json()
@@ -600,7 +600,7 @@ def home():
                 r = cursor.fetchone()
                 if cursor.rowcount != 1:
                     email = account_info_json['email']
-                    admins = json.dumps(app.app.config['ADMINS'])
+                    admins = json.dumps(app.config['ADMINS'])
                     if email in admins:
                         role = 'admin'
                     else:
@@ -628,7 +628,7 @@ def home():
             #
             #
 
-            access_token = app.iam_blueprint.token['access_token']
+            access_token = iam_blueprint.token['access_token']
 
             headers = {'Authorization': 'bearer %s' % access_token}
 
@@ -649,12 +649,12 @@ def home():
         return redirect(url_for('logout'))
 
 
-@app.app.route('/template/<depid>')
+@app.route('/template/<depid>')
 def deptemplate(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
 
     url = orchestratorUrl + "/deployments/" + depid + "/template"
@@ -668,9 +668,9 @@ def deptemplate(depid=None):
     return render_template('deptemplate.html', template=template)
 
 
-@app.app.route('/output/<depid>')
+@app.route('/output/<depid>')
 def depoutput(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     # retrieve deployment from DB
@@ -690,9 +690,9 @@ def depoutput(depid=None):
         return render_template('depoutput.html', deployment=dep, inputs=inp, outputs=output, links=links)
 
 
-@app.app.route('/templatedb/<depid>')
+@app.route('/templatedb/<depid>')
 def deptemplatedb(depid):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     # retrieve deployment from DB
@@ -704,12 +704,12 @@ def deptemplatedb(depid):
         return render_template('deptemplate.html', template=template)
 
 
-@app.app.route('/delete/<depid>')
+@app.route('/delete/<depid>')
 def depdel(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
     url = orchestratorUrl + "/deployments/" + depid
     response = requests.delete(url, headers=headers)
@@ -737,12 +737,12 @@ def delete_secret_from_vault(access_token, secret_path):
     vault.delete_secret(delete_token, secret_path)
 
 
-@app.app.route('/create', methods=['GET', 'POST'])
+@app.route('/create', methods=['GET', 'POST'])
 def depcreate():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
 
     if request.method == 'GET':
         return render_template('createdep.html', templates=toscaTemplates, inputs={})
@@ -783,7 +783,14 @@ def depcreate():
             if 'description' in template:
                 description = template['description']
 
-            slas = get_slas(access_token)
+
+            try:
+                slas = get_slas(access_token)
+        
+            except Exception as e:
+                flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+                return redirect(url_for('home'))
+
             return render_template('createdep.html',
                                    templates=toscaTemplates,
                                    selectedTemplate=selected_tosca,
@@ -806,19 +813,19 @@ def add_sla_to_template(template, sla_id):
     #    template['topology_template']['policies']=[{ "deploy_on_specific_site": { "type": "tosca.policies.Placement", "properties": { "sla_id": sla_id }, "targets": compute_nodes  } }]
     template['topology_template']['policies'] = [
         {"deploy_on_specific_site": {"type": "tosca.policies.Placement", "properties": {"sla_id": sla_id}}}]
-    app.app.logger.info(yaml.dump(template, default_flow_style=False))
+    app.logger.info(yaml.dump(template, default_flow_style=False))
     return template
 
 
-@app.app.route('/submit', methods=['POST'])
+@app.route('/submit', methods=['POST'])
 def createdep():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
-    callback_url = app.app.config['CALLBACK_URL']
+    access_token = iam_blueprint.session.token['access_token']
+    callback_url = app.config['CALLBACK_URL']
 
-    app.app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+    app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
     try:
         with io.open(toscaDir + request.args.get('template')) as stream:
@@ -858,11 +865,11 @@ def createdep():
                 vault_secret_uuid = str(uuid_generator.uuid4())
                 if 'vault_secret_key' in inputs:
                     vault_secret_key = inputs['vault_secret_key']
-                app.app.logger.debug("Storage encryption enabled, appending wrapping token.")
+                app.logger.debug("Storage encryption enabled, appending wrapping token.")
                 inputs['vault_wrapping_token'] = create_vault_wrapping_token(access_token)
                 inputs['vault_secret_path'] = session['userid'] + '/' + vault_secret_uuid
 
-            app.app.logger.debug("Parameters: " + json.dumps(inputs))
+            app.logger.debug("Parameters: " + json.dumps(inputs))
 
             payload = {"template": yaml.dump(template, default_flow_style=False), "parameters": inputs,
                        "callback": callback_url}
@@ -945,19 +952,19 @@ def create_vault_wrapping_token(access_token):
     return wrapping_token
 
 
-@app.app.route('/logout')
+@app.route('/logout')
 def logout():
     session.clear()
-    app.iam_blueprint.session.get("/logout")
+    iam_blueprint.session.get("/logout")
     #   del iam_blueprint.session.token
     return redirect(url_for('login'))
 
 
-@app.app.route('/callback', methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
     # data=request.data
     payload = request.get_json()
-    app.app.logger.info("Callback payload: " + json.dumps(payload))
+    app.logger.info("Callback payload: " + json.dumps(payload))
 
     status = payload['status']
     task = payload['task']
@@ -1025,11 +1032,11 @@ def callback():
                             cursor.close()
                         connection.close()
     else:
-        app.app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
     # send email to user
     if user_email != '' and rf == 1:
-        mail_sender = app.app.config['MAIL_SENDER']
+        mail_sender = app.config['MAIL_SENDER']
         if status == 'CREATE_COMPLETE':
             msg = Message("Deployment complete",
                           sender=mail_sender,
@@ -1057,13 +1064,13 @@ def callback():
     return resp
 
 
-@app.app.route('/read_secret_from_vault/<depid>')
+@app.route('/read_secret_from_vault/<depid>')
 def read_secret_from_vault(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     try:
-        access_token = app.iam_blueprint.token['access_token']
+        access_token = iam_blueprint.token['access_token']
 
     except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
