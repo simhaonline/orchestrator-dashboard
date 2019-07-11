@@ -69,8 +69,20 @@ slamUrl = app.config.get('SLAM_URL')
 cmdbUrl = app.config.get('CMDB_URL')
 
 vault_url = app.config.get('VAULT_URL')
-vault_secrets_path = app.config.get('VAULT_SECRETS_PATH')
-vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+if vault_url:
+   app.config.from_json('vault-config.json')
+   vault_secrets_path = app.config.get('VAULT_SECRETS_PATH')
+   vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+   vault_wrapping_token_time_duration = app.config.get("WRAPPING_TOKEN_TIME_DURATION")
+   vault_read_policy = app.config.get("READ_POLICY")
+   vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
+   vault_read_token_renewal_duration = app.config.get("READ_TOKEN_RENEWAL_TIME_DURATION")
+   vault_write_policy = app.config.get("WRITE_POLICY")
+   vaulr_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
+   vault_wtite_token_renewal_time_duration = app.config.get("WRITE_TOKEN_RENEWAL_TIME_DURATION")
+   vault_delete_policy = app.config.get("DELETE_POLICY")
+   vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
+   vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
 
 @app.route('/settings')
@@ -732,7 +744,7 @@ def delete_secret_from_vault(access_token, secret_path):
 
     auth_token = vault.get_auth_token()
 
-    delete_token = vault.get_token(auth_token, 'delete_only', '12h', '12h')
+    delete_token = vault.get_token(auth_token, vault_delete_policy, vault_delete_token_time_duration, vault_delete_token_renewal_time_duration)
 
     vault.delete_secret(delete_token, secret_path)
 
@@ -947,7 +959,7 @@ def create_vault_wrapping_token(access_token):
 
     auth_token = vault.get_auth_token()
 
-    wrapping_token = vault.get_wrapping_token("2h", auth_token, "write_only", "12h", "12h")
+    wrapping_token = vault.get_wrapping_token(vault_wrapping_token_time_duration, auth_token, vault_write_policy, vaulr_write_token_time_duration, vault_wtite_token_renewal_time_duration)
 
     return wrapping_token
 
@@ -1087,7 +1099,7 @@ def read_secret_from_vault(depid=None):
 
         auth_token = vault.get_auth_token()
 
-        read_token = vault.get_token(auth_token, "read_only", "12h", "12h")
+        read_token = vault.get_token(auth_token, vault_read_policy, vault_read_token_time_duration, vault_read_token_renewal_duration)
 
         # retrieval of secret_path and secret_key from the db goes here
         secret_path = session['userid'] + "/" + dep['vault_secret_uuid']

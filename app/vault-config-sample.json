@@ -1,0 +1,14 @@
+{
+    "VAULT_BOUND_AUDIENCE": "orchestrator-dashboard",
+    "VAULT_SECRETS_PATH": "secrets",
+    "WRAPPING_TOKEN_TIME_DURATION": "1h",
+    "READ_POLICY": "read_only",
+    "READ_TOKEN_TIME_DURATION": "12h",
+    "READ_TOKEN_RENEWAL_TIME_DURATION": "12h",
+    "WRITE_POLICY": "write_only",
+    "WRITE_TOKEN_TIME_DURATION": "12h",
+    "WRITE_TOKEN_RENEWAL_TIME_DURATION": "12h",
+    "DELETE_POLICY": "delete_only",
+    "DELETE_TOKEN_TIME_DURATION": "12h",
+    "DELETE_TOKEN_RENEWAL_TIME_DURATION": "12h"
+}
