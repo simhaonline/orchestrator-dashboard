@@ -63,6 +63,7 @@ for path, subdirs, files in os.walk(toscaDir):
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
 tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
+tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
 
 orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
 slamUrl = app.config.get('SLAM_URL')
