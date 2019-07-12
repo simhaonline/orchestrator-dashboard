@@ -56,7 +56,7 @@
     <div class="card shadow mb-4">
         <div class="card-header py-3">
             <h4 class="font-weight-bold text-primary">
-            Template: {% if import_metadata == true %}{{templates[selectedTemplate]["display_name"]}}{% else %}{{selectedTemplate}}{% endif %}
+            Template: {% if import_metadata == true and templates[selectedTemplate]["display_name"] is defined %}{{templates[selectedTemplate]["display_name"]}}{% else %}{{selectedTemplate}}{% endif %}
             </h4>
         </div>
 
