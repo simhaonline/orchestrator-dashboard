@@ -24,14 +24,22 @@
         <div class="card-body">
             <form name="tosca_template" action="{{ url_for('depcreate') }}" method='POST'>
                 <div class="form-group">
-                    <label for="tosca_template">Select TOSCA Template:</label>
+                    <label for="tosca_template">Service type selection:</label>
+                    {% if import_metadata == true %}
                     <select class="js-example-basic-single js-states form-control" name="tosca_template" id ="tosca_template">
-                        <!-- <option value="" selected disabled>-->
-                        <!-- <option hidden selected disabled >Select a template...</option> -->
+                        {% for key, value in templates.items() %}
+                        <option name="tosca_template" value="{{key}}" {% if selectedTemplate is defined %}{% if key == selectedTemplate %}selected{% endif %}{% endif %}>
+                        {% if value.display_name is defined %}{{value.display_name}}{% else %}{{key}}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <select class="js-example-basic-single js-states form-control" name="tosca_template" id ="tosca_template">
                         {% for tosca in templates %}
                         <option name="tosca_template" {%if selectedTemplate is defined %}{% if tosca == selectedTemplate %}selected{% endif %}{% endif %}>{{tosca}}</option>
                         {% endfor %}
                     </select>
+                    {% endif %}
                 </div>
                 <button type="submit" id="loadToscaBtn" class="btn btn-success">Configure</button>
                 {% if not selectedTemplate is defined %}
@@ -47,7 +55,9 @@
     <br>
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h4 class="font-weight-bold text-primary">Template: {{selectedTemplate}}</h4>
+            <h4 class="font-weight-bold text-primary">
+            Template: {% if import_metadata == true %}{{templates[selectedTemplate]["display_name"]}}{% else %}{{selectedTemplate}}{% endif %}
+            </h4>
         </div>
 
         <div class="card-body">

@@ -62,8 +62,33 @@ for path, subdirs, files in os.walk(toscaDir):
             if name[0] != '.':
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
-tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
+import_metadata = False
 tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
+if tosca_metadata_dir:
+    import_metadata = True
+    metadata_dict = {}
+    tosca_metadata_path = tosca_metadata_dir + "/"
+
+    for tosca in toscaTemplates:
+        # Assign default metadata vaules
+        metadata_dict[tosca] = dict(name=tosca,
+                                    icon=app.root_path+"/static/defaults/default_app.svg")
+        # Search for metadata file
+        for mpath, msubs, mnames in os.walk(tosca_metadata_path):
+            for mname in mnames:
+                if fnmatch(mname, '*.metadata.yml') or fnmatch(mname, '*.metadata.yaml'):
+                    # skip hidden files
+                    if mname[0] != '.':
+                        tosca_metadata_file = os.path.join(mpath, mname)
+                        with io.open(tosca_metadata_file) as metadata_file:
+                            metadata = yaml.load(metadata_file)
+                            template_metadata = metadata["template_metadata"]
+                            if(tosca == template_metadata["name"]):
+                                metadata_dict[tosca] = template_metadata
+
+    toscaTemplates = metadata_dict
+
+tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
 
 orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
 slamUrl = app.config.get('SLAM_URL')
@@ -758,7 +783,7 @@ def depcreate():
     access_token = iam_blueprint.session.token['access_token']
 
     if request.method == 'GET':
-        return render_template('createdep.html', templates=toscaTemplates, inputs={})
+        return render_template('createdep.html', templates=toscaTemplates, inputs={}, import_metadata=import_metadata)
     else:
         selected_tosca = request.form.get('tosca_template')
 
@@ -807,6 +832,7 @@ def depcreate():
             return render_template('createdep.html',
                                    templates=toscaTemplates,
                                    selectedTemplate=selected_tosca,
+                                   import_metadata=import_metadata,
                                    description=description,
                                    inputs=inputs,
                                    slas=slas,
