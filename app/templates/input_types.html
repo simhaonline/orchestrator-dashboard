@@ -1,5 +1,13 @@
 <div class="form-group">
-  <label for="{{key}}">{% if value.display_name is defined %}{{value.display_name}}{% else %}{{key}}{% endif %}</label>
+  {% if value.tag_type is not defined or value.tag_type != "hidden" %}
+  <label for="{{key}}">
+    {% if value.display_name is defined %}
+    {{value.display_name}}
+    {% else %}
+    {{key}}
+    {% endif %}
+  </label>
+  {% endif %}
   {% if value.tag_type is defined %}
 
     <!-- text type -->
@@ -9,7 +17,7 @@
 
     <!-- hidden text type -->
     {% elif value.tag_type == "hidden" %}
-      <input type="hidden" class="form-control" id="{{key}}" value="{{value.default}}" />
+      <input type="hidden" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end hidden text type -->
 
     <!-- email type -->
