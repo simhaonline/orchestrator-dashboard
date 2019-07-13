@@ -5,6 +5,7 @@
     "ORCHESTRATOR_URL": "https://indigo-paas.cloud.ba.infn.it/orchestrator",
     "SLAM_URL": "https://indigo-slam.cloud.ba.infn.it:8443",
     "CMDB_URL": "https://indigo-paas.cloud.ba.infn.it/cmdb",
+    "TOSCA_METADATA_DIR": "/opt/tosca-metadata",
     "TOSCA_TEMPLATES_DIR": "/opt/tosca-templates",
     "CALLBACK_URL": "https://my-orchestrator-dashboard.com/callback",
     "DB_HOST": "localhost",
@@ -16,4 +17,5 @@
     "MAIL_PORT": "25",
     "MAIL_SENDER": "test@orchestrator.com",
     "ADMINS": "['admin@foo.it','other_admin@test.it']"
+    "VAULT_URL": "https://my-vault-instance.com"
 }
