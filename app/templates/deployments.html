@@ -98,8 +98,8 @@
                 Do you really want to delete the deployment {{deployment.uuid}}?
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <a type="button" id="deleteBtn" class="btn btn-danger" href="{{ url_for("depdel", depid=deployment.uuid) }}">Delete deployment</a>
+                <button id="cancelBtn" type="button" class="btn btn-primary" data-dismiss="modal">Cancel</button>
+                <a id="deleteBtn" class="btn btn-danger" role="button" href="{{ url_for("depdel", depid=deployment.uuid) }}">Delete deployment</a>
               </div>
             </div>
           </div>
@@ -122,6 +122,8 @@
 $(document).ready(function () {
     $("#deleteBtn").click(function () {
         // add spinner to button
+        $("#cancelBtn").addClass("disabled", true);
+        $(this).addClass("disabled", true);
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...` );
     });
 });
