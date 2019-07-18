@@ -47,34 +47,37 @@
                      <span class="fas fa-arrow-left mr-2"></span> Back</button>
                 {% endif %}
             </form>
-        </div>
-    </div>
 
+            {% if selectedTemplate is defined %}
+            <br>
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h4 class="font-weight-bold text-primary">
+                    Template: {% if import_metadata == true and templates[selectedTemplate]["display_name"] is defined %}{{templates[selectedTemplate]["display_name"]}}{% else %}{{selectedTemplate}}{% endif %}
+                    </h4>
+                </div>
 
-    {% if selectedTemplate is defined %}
-    <br>
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h4 class="font-weight-bold text-primary">
-            Template: {% if import_metadata == true and templates[selectedTemplate]["display_name"] is defined %}{{templates[selectedTemplate]["display_name"]}}{% else %}{{selectedTemplate}}{% endif %}
-            </h4>
-        </div>
+                <div class="card-body">
+                    {% if description is defined %}
+                    <div class="alert alert-info">
+                        <strong>Description:</strong> {{description}}
+                    </div>
+                    {% endif %}
 
-        <div class="card-body">
-            {% if description is defined %}
-            <div class="alert alert-info">
-                <strong>Description:</strong> {{description}}
+                    {% if enable_config_form %}
+                        {% include 'config_form.html' %}
+                    {% else %}
+                        {% include 'default_form.html' %}
+                    {% endif %}
+                    <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                    <button type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('depcreate') }}'">
+                        <span class="fas fa-ban mr-2"></span>Cancel</button>
+                    </form>
+                </div>
             </div>
             {% endif %}
-
-            {% if enable_config_form %}
-                {% include 'config_form.html' %}
-            {% else %}
-                {% include 'default_form.html' %}
-            {% endif %}
         </div>
     </div>
-    {% endif %}
 </div>
 
 <style>
