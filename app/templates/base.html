@@ -59,8 +59,8 @@
             </button>
 	    <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active"><a class="nav-link" href="{{ url_for("home") }}">Home</a></li>
                     {% if session['username'] %}
+                    <li class="nav-item active"><a class="nav-link" href="{{ url_for("home") }}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for("getslas") }}">SLAs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ url_for("show_settings") }}">Settings</a></li>
                     {% if session['userrole'] == 'admin' %}
