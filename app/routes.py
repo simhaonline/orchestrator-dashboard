@@ -1,4 +1,4 @@
-from app import app, iam_blueprint, iam_base_url
+from app import app, iam_blueprint, iam_base_url, mail
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -1082,7 +1082,7 @@ def callback():
                           recipients=[user_email])
             msg.body = "Your deployment request with uuid: {} has been successfully completed.".format(uuid)
             try:
-                app.mail.send(msg)
+                mail.send(msg)
             except Exception as error:
                 logexception("sending email:".format(error))
 
@@ -1092,7 +1092,7 @@ def callback():
                           recipients=[user_email])
             msg.body = "Your deployment request with uuid: {} has failed.".format(uuid)
             try:
-                app.mail.send(msg)
+                mail.send(msg)
             except Exception as error:
                 logexception("sending email:".format(error))
 
