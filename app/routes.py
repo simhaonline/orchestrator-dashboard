@@ -1,4 +1,4 @@
-import app
+from app import app, iam_blueprint, iam_base_url, mail
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -13,16 +13,23 @@ from fnmatch import fnmatch
 from hashlib import md5
 import mysql.connector
 from dateutil import parser
+import uuid as uuid_generator
 
-iam_base_url = app.app.config['IAM_BASE_URL']
+# Hashicorp vault support integration
+from app.vault_integration import VaultIntegration
+
+iam_base_url = app.config['IAM_BASE_URL']
+iam_client_id = app.config.get('IAM_CLIENT_ID')
+iam_client_secret = app.config.get('IAM_CLIENT_SECRET')
+
 issuer = iam_base_url
 if not issuer.endswith('/'):
     issuer += '/'
-db_host = app.app.config['DB_HOST']
-db_port = app.app.config['DB_PORT']
-db_user = app.app.config['DB_USER']
-db_password = app.app.config['DB_PASSWORD']
-db_name = app.app.config['DB_NAME']
+db_host = app.config['DB_HOST']
+db_port = app.config['DB_PORT']
+db_user = app.config['DB_USER']
+db_password = app.config['DB_PASSWORD']
+db_name = app.config['DB_NAME']
 
 
 def to_pretty_json(value):
@@ -30,7 +37,7 @@ def to_pretty_json(value):
                       indent=4, separators=(',', ': '))
 
 
-app.app.jinja_env.filters['tojson_pretty'] = to_pretty_json
+app.jinja_env.filters['tojson_pretty'] = to_pretty_json
 
 
 def avatar(email, size):
@@ -46,7 +53,7 @@ def getdbconnection():
     return cnx
 
 
-toscaDir = app.app.config.get('TOSCA_TEMPLATES_DIR') + "/"
+toscaDir = app.config.get('TOSCA_TEMPLATES_DIR') + "/"
 toscaTemplates = []
 for path, subdirs, files in os.walk(toscaDir):
     for name in files:
@@ -55,26 +62,71 @@ for path, subdirs, files in os.walk(toscaDir):
             if name[0] != '.':
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
-tosca_pars_dir = app.app.config.get('TOSCA_PARAMETERS_DIR')
+import_metadata = False
+tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
+if tosca_metadata_dir:
+    import_metadata = True
+    metadata_dict = {}
+    tosca_metadata_path = tosca_metadata_dir + "/"
 
-orchestratorUrl = app.app.config.get('ORCHESTRATOR_URL')
-slamUrl = app.app.config.get('SLAM_URL')
-cmdbUrl = app.app.config.get('CMDB_URL')
+    for tosca in toscaTemplates:
+        # Assign default metadata vaules
+        metadata_dict[tosca] = dict(name=tosca,
+                                    icon=app.root_path+"/static/defaults/default_app.svg")
+        # Search for metadata file
+        for mpath, msubs, mnames in os.walk(tosca_metadata_path):
+            for mname in mnames:
+                if fnmatch(mname, '*.metadata.yml') or fnmatch(mname, '*.metadata.yaml'):
+                    # skip hidden files
+                    if mname[0] != '.':
+                        tosca_metadata_file = os.path.join(mpath, mname)
+                        with io.open(tosca_metadata_file) as metadata_file:
+                            metadata = yaml.load(metadata_file)
+                            template_metadata = metadata["template_metadata"]
+                            if(tosca == template_metadata["name"]):
+                                metadata_dict[tosca] = template_metadata
+
+    toscaTemplates = metadata_dict
+
+tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
+
+orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
+slamUrl = app.config.get('SLAM_URL')
+cmdbUrl = app.config.get('CMDB_URL')
+
+vault_url = app.config.get('VAULT_URL')
+if vault_url:
+   app.config.from_json('vault-config.json')
+   vault_secrets_path = app.config.get('VAULT_SECRETS_PATH')
+   vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+   vault_wrapping_token_time_duration = app.config.get("WRAPPING_TOKEN_TIME_DURATION")
+   vault_read_policy = app.config.get("READ_POLICY")
+   vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
+   vault_read_token_renewal_duration = app.config.get("READ_TOKEN_RENEWAL_TIME_DURATION")
+   vault_write_policy = app.config.get("WRITE_POLICY")
+   vaulr_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
+   vault_wtite_token_renewal_time_duration = app.config.get("WRITE_TOKEN_RENEWAL_TIME_DURATION")
+   vault_delete_policy = app.config.get("DELETE_POLICY")
+   vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
+   vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
 
-@app.app.route('/settings')
+@app.route('/settings')
 def show_settings():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
-    return render_template('settings.html', orchestrator_url=orchestratorUrl, iam_url=app.iam_base_url)
+    return render_template('settings.html', orchestrator_url=orchestratorUrl, iam_url=iam_base_url)
 
 
-@app.app.route('/deployments/<subject>')
+@app.route('/deployments/<subject>')
 def show_deployments(subject):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
-    if not session['userrole'] == 'admin':
+    if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
+
+    connection = None
+    cursor = None
 
     deployments = []
     user = get_user(subject)
@@ -82,11 +134,12 @@ def show_deployments(subject):
     if user is not {}:
         #
         # retrieve deployments from orchestrator
-        access_token = app.iam_blueprint.token['access_token']
+        access_token = iam_blueprint.token['access_token']
 
         headers = {'Authorization': 'bearer %s' % access_token}
 
-        url = orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, issuer), 0, 999999)
+        url = orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, issuer), 0,
+                                                                                   999999)
         response = requests.get(url, headers=headers)
 
         deporch = []
@@ -131,9 +184,11 @@ def show_deployments(subject):
         except Exception as ex:
             logexception("reading deployments: {}".format(ex))
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            if connection is not None:
+                if connection.is_connected():
+                    if cursor is not None:
+                        cursor.close()
+                    connection.close()
 
         return render_template('dep_user.html', user=user, deployments=deployments)
     else:
@@ -142,14 +197,18 @@ def show_deployments(subject):
         return render_template('users.html', users=users)
 
 
-@app.app.route('/user/<subject>', methods=['GET', 'POST'])
+@app.route('/user/<subject>', methods=['GET', 'POST'])
 def show_user(subject):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
-    if not session['userrole'] == 'admin':
+    if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
 
     if request.method == 'POST':
+
+        connection = None
+        cursor = None
+
         # cannot change its own role
         if session['userid'] == subject:
             role = session['userrole']
@@ -168,9 +227,11 @@ def show_user(subject):
         except mysql.connector.Error as error:
             logexception("updating users table {}".format(error))
         finally:
-            if connection.is_connected():
-                cursor.close()
-                connection.close()
+            if connection is not None:
+                if connection.is_connected():
+                    if cursor is not None:
+                        cursor.close()
+                    connection.close()
 
     user = get_user(subject)
     if user is not None:
@@ -181,6 +242,9 @@ def show_user(subject):
 
 def get_users():
     users = []
+    connection = None
+    cursor = None
+
     try:
         connection = getdbconnection()
         cursor = connection.cursor()
@@ -194,14 +258,19 @@ def get_users():
     except mysql.connector.Error as error:
         logexception("reading users table {}".format(error))
     finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        if connection is not None:
+            if connection.is_connected():
+                if cursor is not None:
+                    cursor.close()
+                connection.close()
     return users
 
 
 def get_user(subject):
     user = {}
+    connection = None
+    cursor = None
+
     try:
         connection = getdbconnection()
         cursor = connection.cursor()
@@ -214,14 +283,19 @@ def get_user(subject):
     except mysql.connector.Error as error:
         logexception("reading users table {}".format(error))
     finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        if connection is not None:
+            if connection.is_connected():
+                if cursor is not None:
+                    cursor.close()
+                connection.close()
     return user
 
 
 def get_deployment(uuid):
     deployment = {}
+    connection = None
+    cursor = None
+
     try:
         connection = getdbconnection()
         cursor = connection.cursor()
@@ -236,18 +310,20 @@ def get_deployment(uuid):
     except mysql.connector.Error as error:
         logexception("reading deployments table: {}".format(error))
     finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        if connection is not None:
+            if connection.is_connected():
+                if cursor is not None:
+                    cursor.close()
+                connection.close()
 
     return deployment
 
 
-@app.app.route('/users')
+@app.route('/users')
 def show_users():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
-    if not session['userrole'] == 'admin':
+    if not session['userrole'].lower() == 'admin':
         return render_template('home.html')
 
     users = get_users()
@@ -255,7 +331,7 @@ def show_users():
     return render_template('users.html', users=users)
 
 
-@app.app.route('/login')
+@app.route('/login')
 def login():
     session.clear()
     return render_template('home.html')
@@ -266,7 +342,7 @@ def get_sla_extra_info(access_token, service_id):
     url = cmdbUrl + "/service/id/" + service_id
     response = requests.get(url, headers=headers, timeout=20)
     response.raise_for_status()
-    app.app.logger.info(json.dumps(response.json()['data']['service_type']))
+    app.logger.info(json.dumps(response.json()['data']['service_type']))
 
     service_type = response.json()['data']['service_type']
     sitename = response.json()['data']['sitename']
@@ -282,10 +358,10 @@ def get_slas(access_token):
     headers = {'Authorization': 'bearer %s' % access_token}
     url = slamUrl + "/rest/slam/preferences/" + session['organisation_name']
     response = requests.get(url, headers=headers, timeout=20)
-    app.app.logger.info("SLA response status: " + str(response.status_code))
+    app.logger.info("SLA response status: " + str(response.status_code))
 
     response.raise_for_status()
-    app.app.logger.info("SLA response: " + json.dumps(response.json()))
+    app.logger.info("SLA response: " + json.dumps(response.json()))
     slas = response.json()['sla']
 
     for i in range(len(slas)):
@@ -296,13 +372,13 @@ def get_slas(access_token):
     return slas
 
 
-@app.app.route('/slas')
+@app.route('/slas')
 def getslas():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     try:
-        access_token = app.iam_blueprint.token['access_token']
+        access_token = iam_blueprint.token['access_token']
         slas = get_slas(access_token)
 
     except Exception as e:
@@ -357,6 +433,19 @@ def cvdeployment(tp):
     deployment['locked'] = tp[15]
     deployment['feedbackrequired'] = tp[16]
     deployment['remote'] = tp[17]
+    deployment['storage_encryption'] = tp[19]
+    if not tp[20] is None:
+        deployment['vault_secret_uuid'] = tp[20]
+    else:
+        deployment['vault_secret_uuid'] = ''
+    if not tp[21] is None:
+        deployment['vault_secret_key'] = tp[21]
+    else:
+        deployment['vault_secret_key'] = ''
+    if not tp[22] is None:
+        deployment['statusReason'] = tp[22]
+    else:
+        deployment['statusReason'] = ''
     return deployment
 
 
@@ -378,6 +467,9 @@ def cvuser(tp):
 def updatedeploymentsstatus(deployments, userid):
     iids = []
     uuid = ''
+    connection = None
+    cursor = None
+
     # update deployments status in database
     for dep_json in deployments:
         uuid = dep_json['uuid']
@@ -392,18 +484,23 @@ def updatedeploymentsstatus(deployments, userid):
             providername = dep_json['cloudProviderName']
         else:
             providername = ''
+        if 'statusReason' in dep_json:
+            status_reason = dep_json['statusReason']
+        else:
+            status_reason = ''
 
         dep = get_deployment(uuid)
 
-        if 'cloudProviderName' in dep:
-            pn = dep['cloudProviderName']
-        else:
-            pn = ''
         if dep != {}:
             dep_json['additionaldescription'] = dep['additionaldescription']
             dep_json['endpoint'] = dep['endpoint']
+            pn = dep['cloudProviderName']
+            rs = dep['statusReason']
+        else:
+            pn = ''
+            rs = ''
 
-        if (dep != {} and (dep['status'] != dep_json['status'] or pn != providername)) or dep == {}:
+        if (dep != {} and (dep['status'] != dep_json['status'] or pn != providername or rs != status_reason)) or dep == {}:
             try:
                 connection = getdbconnection()
                 cursor = connection.cursor()
@@ -414,17 +511,20 @@ def updatedeploymentsstatus(deployments, userid):
                     vphid = ''
 
                 if dep != {}:
-                    update_query = "UPDATE `deployments` SET `update_time` = '{}', `physicalId` = '{}', `status` = '{}', `outputs` = '{}', `task` = '{}', `links` = '{}', `remote` = '{}' , `provider_name` = '{}' WHERE `uuid` = '{}'"
+                    update_query = "UPDATE `deployments` SET `update_time` = '{}', `physicalId` = '{}', `status` = '{}'," \
+                                   " `outputs` = '{}', `task` = '{}', `links` = '{}', `remote` = '{}' ," \
+                                   " `provider_name` = '{}', `status_reason` = '{}' WHERE `uuid` = '{}'"
                     update_cmd = update_query.format(dep_json['updateTime'], vphid, dep_json['status'],
                                                      json.dumps(dep_json['outputs']), dep_json['task'],
-                                                     json.dumps(dep_json['links']), '1', providername, uuid)
+                                                     json.dumps(dep_json['links']), '1', providername, status_reason,
+                                                     uuid)
                     cursor.execute(update_cmd)
                     connection.commit()
                 else:
-                    app.app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+                    app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
                     # retrieve template
-                    access_token = app.iam_blueprint.session.token['access_token']
+                    access_token = iam_blueprint.session.token['access_token']
                     headers = {'Authorization': 'bearer %s' % access_token}
 
                     url = orchestratorUrl + "/deployments/" + uuid + "/template"
@@ -440,12 +540,17 @@ def updatedeploymentsstatus(deployments, userid):
                         endpoint = dep_json['outputs']['endpoint']
                     else:
                         endpoint = ''
-                    insert_query = "INSERT INTO `deployments` (`uuid`, `creation_time`, `update_time`, `physicalId`, `description`, `status`, `outputs`, `task`, `links`, `sub`, `template`, `inputs`, `params`, `provider_name`, `endpoint`, `remote`, `issuer`)" \
-                                   " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    insert_query = "INSERT INTO `deployments` (`uuid`, `creation_time`, `update_time`, `physicalId`, " \
+                                   "`description`, `status`, `outputs`, `task`, `links`, `sub`, `template`, `inputs`, " \
+                                   "`params`, `provider_name`, `endpoint`, `remote`, `issuer`, `storage_encryption`, " \
+                                   "`vault_secret_uuid`, `vault_secret_key`)" \
+                                   " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, " \
+                                   "%s, %s)"
                     insert_values = (
                         uuid, dep_json['creationTime'], dep_json['updateTime'], vphid, '', dep_json['status'],
                         json.dumps(dep_json['outputs']), dep_json['task'], json.dumps(dep_json['links']),
-                        userid, template, '', '', providername, endpoint, '1', dep_json['createdBy']['issuer'])
+                        userid, template, '', '', providername, endpoint, '1', dep_json['createdBy']['issuer'], '0',
+                        '', '')
                     cursor.execute(insert_query, insert_values)
                     connection.commit()
 
@@ -453,9 +558,11 @@ def updatedeploymentsstatus(deployments, userid):
                 connection.rollback()  # rollback if any exception occured
                 logexception("updating deployment with uuid:{} in deployments table: {}".format(uuid, error))
             finally:
-                if connection.is_connected():
-                    cursor.close()
-                    connection.close()
+                if connection is not None:
+                    if connection.is_connected():
+                        if cursor is not None:
+                            cursor.close()
+                        connection.close()
     #
     # check delete in progress or missing
     try:
@@ -472,16 +579,18 @@ def updatedeploymentsstatus(deployments, userid):
             if uuid not in iids:
                 time_string = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
                 update_query = "UPDATE `deployments` SET `update_time` = '{}', `status` = '{}' WHERE `uuid` = '{}'"
-                update_cmd = update_query.format(time_string, 'DELETE_COMPLETE',uuid)
+                update_cmd = update_query.format(time_string, 'DELETE_COMPLETE', uuid)
                 cursor.execute(update_cmd)
                 connection.commit()
     except mysql.connector.Error as error:
         connection.rollback()  # rollback if any exception occured
         logexception("updating deployment with UUID:{} in deployments table: {}".format(uuid, error))
     finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
+        if connection is not None:
+            if connection.is_connected():
+                if cursor is not None:
+                    cursor.close()
+                connection.close()
 
     return deployments
 
@@ -493,16 +602,16 @@ def logexception(err):
     filename = f.f_code.co_filename
     linecache.checkcache(filename)
     line = linecache.getline(filename, lineno, f.f_globals)
-    app.app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
+    app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
 
-@app.app.route('/dashboard/')
-@app.app.route('/')
+@app.route('/dashboard/')
+@app.route('/')
 def home():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
     try:
-        account_info = app.iam_blueprint.session.get("/userinfo")
+        account_info = iam_blueprint.session.get("/userinfo")
 
         if account_info.ok:
             account_info_json = account_info.json()
@@ -517,6 +626,9 @@ def home():
             # check database
             # if user not found, insert
             #
+            connection = None
+            cursor = None
+
             try:
                 connection = getdbconnection()
                 cursor = connection.cursor()
@@ -526,12 +638,13 @@ def home():
                 r = cursor.fetchone()
                 if cursor.rowcount != 1:
                     email = account_info_json['email']
-                    admins = json.dumps(app.app.config['ADMINS'])
+                    admins = json.dumps(app.config['ADMINS'])
                     if email in admins:
                         role = 'admin'
                     else:
                         role = 'user'
-                    insert_query = " INSERT INTO `users` (`sub`, `name`, `username`, `given_name`, `family_name`, `email`, `organisation_name`, `picture`, `role`, `active`)" \
+                    insert_query = " INSERT INTO `users` (`sub`, `name`, `username`, `given_name`, `family_name`, " \
+                                   "`email`, `organisation_name`, `picture`, `role`, `active`)" \
                                    " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
                     insert_values = (
                         account_info_json['sub'], account_info_json['name'], account_info_json['preferred_username'],
@@ -545,13 +658,15 @@ def home():
                 connection.rollback()  # rollback if any exception occured
                 logexception("inserting record into users table {}".format(error))
             finally:
-                if connection.is_connected():
-                    cursor.close()
-                    connection.close()
+                if connection is not None:
+                    if connection.is_connected():
+                        if cursor is not None:
+                            cursor.close()
+                        connection.close()
             #
             #
 
-            access_token = app.iam_blueprint.token['access_token']
+            access_token = iam_blueprint.token['access_token']
 
             headers = {'Authorization': 'bearer %s' % access_token}
 
@@ -572,12 +687,12 @@ def home():
         return redirect(url_for('logout'))
 
 
-@app.app.route('/template/<depid>')
+@app.route('/template/<depid>')
 def deptemplate(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
 
     url = orchestratorUrl + "/deployments/" + depid + "/template"
@@ -591,9 +706,9 @@ def deptemplate(depid=None):
     return render_template('deptemplate.html', template=template)
 
 
-@app.app.route('/output/<depid>')
+@app.route('/output/<depid>')
 def depoutput(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     # retrieve deployment from DB
@@ -606,14 +721,16 @@ def depoutput(depid=None):
         if p != -1:
             p += 10
             output = output[:p] + '\n' + output[p:]
-        inp = json.dumps(dep['inputs'])
+        # inp = json.dumps(dep['inputs'])
+        inp = dep[
+            'inputs']  # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
         links = json.dumps(dep['links'])
-        return render_template('depoutput.html', deployment=dep, input=inp, output=output, links=links)
+        return render_template('depoutput.html', deployment=dep, inputs=inp, outputs=output, links=links)
 
 
-@app.app.route('/templatedb/<depid>')
+@app.route('/templatedb/<depid>')
 def deptemplatedb(depid):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     # retrieve deployment from DB
@@ -625,73 +742,100 @@ def deptemplatedb(depid):
         return render_template('deptemplate.html', template=template)
 
 
-@app.app.route('/delete/<depid>')
+@app.route('/delete/<depid>')
 def depdel(depid=None):
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
     url = orchestratorUrl + "/deployments/" + depid
     response = requests.delete(url, headers=headers)
 
     if not response.ok:
         flash("Error deleting deployment: " + response.text)
+    else:
+        dep = get_deployment(depid)
+        if dep != {} and dep['storage_encryption'] == 1:
+            secret_path = session['userid'] + "/" + dep['vault_secret_uuid']
+            delete_secret_from_vault(access_token, secret_path)
 
     return redirect(url_for('home'))
 
 
-@app.app.route('/create', methods=['GET', 'POST'])
+def delete_secret_from_vault(access_token, secret_path):
+
+    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
+                             access_token, vault_secrets_path)
+
+    auth_token = vault.get_auth_token()
+
+    delete_token = vault.get_token(auth_token, vault_delete_policy, vault_delete_token_time_duration, vault_delete_token_renewal_time_duration)
+
+    vault.delete_secret(delete_token, secret_path)
+
+
+@app.route('/create', methods=['GET', 'POST'])
 def depcreate():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
+    access_token = iam_blueprint.session.token['access_token']
 
     if request.method == 'GET':
-        return render_template('createdep.html', templates=toscaTemplates, inputs={})
+        return render_template('createdep.html', templates=toscaTemplates, inputs={}, import_metadata=import_metadata)
     else:
         selected_tosca = request.form.get('tosca_template')
 
         with io.open(toscaDir + selected_tosca) as stream:
             template = yaml.load(stream)
             if 'topology_template' not in template:
-                flash(
-                    "Error reading template \"" + selected_tosca + "\": syntax is not correct. Please select another template.")
+                flash('Error reading template "' + selected_tosca + '": syntax is not correct.' 
+                                                                    ' Please select another template.')
                 return redirect(url_for('depcreate'))
 
             inputs = {}
             if 'inputs' in template['topology_template']:
                 inputs = template['topology_template']['inputs']
 
-            ## add parameters code here
+            # add parameters code here
             enable_config_form = False
-            tabs={}
+            tabs = {}
             if tosca_pars_dir:
-              tosca_pars_path = tosca_pars_dir + "/" # this has to be reassigned here because is local.
-              for path, subdirs, files in os.walk(tosca_pars_path):
-                for name in files:
-                  if fnmatch(name, os.path.splitext(selected_tosca)[0]+".parameters.yml") or fnmatch(name, os.path.splitext(selected_tosca)[0]+".parameters.yaml"):
-                    # skip hidden files
-                    if name[0] != '.':
-                      tosca_pars_file = os.path.join(path, name)
-                      with io.open(tosca_pars_file) as pars_file:
-                        enable_config_form = True
-                        pars_data = yaml.load(pars_file)
-                        inputs = pars_data["inputs"]
-                        if( "tabs" in pars_data ): tabs = pars_data["tabs"]
+                tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
+                for fpath, subs, fnames in os.walk(tosca_pars_path):
+                    for fname in fnames:
+                        if fnmatch(fname, os.path.splitext(selected_tosca)[0] + '.parameters.yml') or \
+                                fnmatch(fname, os.path.splitext(selected_tosca)[0] + '.parameters.yaml'):
+                            # skip hidden files
+                            if fname[0] != '.':
+                                tosca_pars_file = os.path.join(fpath, fname)
+                                with io.open(tosca_pars_file) as pars_file:
+                                    enable_config_form = True
+                                    pars_data = yaml.load(pars_file)
+                                    inputs = pars_data["inputs"]
+                                    if "tabs" in pars_data:
+                                        tabs = pars_data["tabs"]
 
             description = "N/A"
             if 'description' in template:
                 description = template['description']
 
-            slas = get_slas(access_token)
+
+            try:
+                slas = get_slas(access_token)
+        
+            except Exception as e:
+                flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+                return redirect(url_for('home'))
+
             return render_template('createdep.html',
                                    templates=toscaTemplates,
                                    selectedTemplate=selected_tosca,
+                                   import_metadata=import_metadata,
                                    description=description,
                                    inputs=inputs,
-    	                           slas=slas,
+                                   slas=slas,
                                    enable_config_form=enable_config_form,
                                    tabs=tabs)
 
@@ -708,19 +852,19 @@ def add_sla_to_template(template, sla_id):
     #    template['topology_template']['policies']=[{ "deploy_on_specific_site": { "type": "tosca.policies.Placement", "properties": { "sla_id": sla_id }, "targets": compute_nodes  } }]
     template['topology_template']['policies'] = [
         {"deploy_on_specific_site": {"type": "tosca.policies.Placement", "properties": {"sla_id": sla_id}}}]
-    app.app.logger.info(yaml.dump(template, default_flow_style=False))
+    app.logger.info(yaml.dump(template, default_flow_style=False))
     return template
 
 
-@app.app.route('/submit', methods=['POST'])
+@app.route('/submit', methods=['POST'])
 def createdep():
-    if not app.iam_blueprint.session.authorized:
+    if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
-    access_token = app.iam_blueprint.session.token['access_token']
-    callback_url = app.app.config['CALLBACK_URL']
+    access_token = iam_blueprint.session.token['access_token']
+    callback_url = app.config['CALLBACK_URL']
 
-    app.app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+    app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
     try:
         with io.open(toscaDir + request.args.get('template')) as stream:
@@ -742,14 +886,29 @@ def createdep():
             else:
                 feedback_required = 0
 
-            if form_data['extra_opts.schedtype'] == "man":
+            if form_data['extra_opts.schedtype'].lower() == "man":
                 template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
 
             additionaldescription = form_data['additional_description']
 
             inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
 
-            app.app.logger.debug("Parameters: " + json.dumps(inputs))
+            storage_encryption = 0
+            vault_secret_uuid = ''
+            vault_secret_key = ''
+            if 'storage_encryption' in inputs and inputs['storage_encryption'].lower() == 'true':
+                storage_encryption = 1
+                vault_secret_key = 'secret'
+
+            if storage_encryption == 1:
+                vault_secret_uuid = str(uuid_generator.uuid4())
+                if 'vault_secret_key' in inputs:
+                    vault_secret_key = inputs['vault_secret_key']
+                app.logger.debug("Storage encryption enabled, appending wrapping token.")
+                inputs['vault_wrapping_token'] = create_vault_wrapping_token(access_token)
+                inputs['vault_secret_path'] = session['userid'] + '/' + vault_secret_uuid
+
+            app.logger.debug("Parameters: " + json.dumps(inputs))
 
             payload = {"template": yaml.dump(template, default_flow_style=False), "parameters": inputs,
                        "callback": callback_url}
@@ -766,6 +925,8 @@ def createdep():
         else:
             # store data into database
             rs_json = json.loads(response.text)
+            connection = None
+            cursor = None
 
             try:
                 connection = getdbconnection()
@@ -785,13 +946,19 @@ def createdep():
                     else:
                         providername = ''
 
-                    insert_query = "INSERT INTO `deployments` (`uuid`, `creation_time`, `update_time`, `physicalId`, `description`, `status`, `outputs`, `task`, `links`, `sub`, `template`, `inputs`, `params`, `provider_name`, `endpoint`, `feedback_required`, `remote`, `issuer`)" \
-                                   " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    insert_query = "INSERT INTO `deployments` (`uuid`, `creation_time`, `update_time`, `physicalId`," \
+                                   " `description`, `status`, `outputs`, `task`, `links`, `sub`, `template`, `inputs`," \
+                                   " `params`, `provider_name`, `endpoint`, `feedback_required`, `remote`, `issuer`," \
+                                   " `storage_encryption`, `vault_secret_uuid`, `vault_secret_key`)" \
+                                   " VALUES  (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, " \
+                                   "%s, %s, %s)"
                     insert_values = (
-                        uuid, rs_json['creationTime'], rs_json['updateTime'], vphid, additionaldescription, rs_json['status'],
-                        json.dumps(rs_json['outputs']), rs_json['task'], json.dumps(rs_json['links']),
+                        uuid, rs_json['creationTime'], rs_json['updateTime'], vphid, additionaldescription,
+                        rs_json['status'], json.dumps(rs_json['outputs']), rs_json['task'],
+                        json.dumps(rs_json['links']),
                         rs_json['createdBy']['subject'], template_text, json.dumps(inputs), json.dumps(params),
-                        providername, '', feedback_required, '1', rs_json['createdBy']['issuer'])
+                        providername, '', feedback_required, '1', rs_json['createdBy']['issuer'],
+                        storage_encryption, vault_secret_uuid, vault_secret_key)
                     cursor.execute(insert_query, insert_values)
                     connection.commit()
                 else:
@@ -800,9 +967,11 @@ def createdep():
                 connection.rollback()  # rollback if any exception occured
                 logexception("inserting data into deployments table {}".format(error))
             finally:
-                if connection.is_connected():
-                    cursor.close()
-                    connection.close()
+                if connection is not None:
+                    if connection.is_connected():
+                        if cursor is not None:
+                            cursor.close()
+                        connection.close()
 
         return redirect(url_for('home'))
 
@@ -811,19 +980,30 @@ def createdep():
         return redirect(url_for('home'))
 
 
-@app.app.route('/logout')
+def create_vault_wrapping_token(access_token):
+    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
+                             access_token, vault_secrets_path)
+
+    auth_token = vault.get_auth_token()
+
+    wrapping_token = vault.get_wrapping_token(vault_wrapping_token_time_duration, auth_token, vault_write_policy, vaulr_write_token_time_duration, vault_wtite_token_renewal_time_duration)
+
+    return wrapping_token
+
+
+@app.route('/logout')
 def logout():
     session.clear()
-    app.iam_blueprint.session.get("/logout")
+    iam_blueprint.session.get("/logout")
     #   del iam_blueprint.session.token
     return redirect(url_for('login'))
 
 
-@app.app.route('/callback', methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
     # data=request.data
     payload = request.get_json()
-    app.app.logger.info("Callback payload: " + json.dumps(payload))
+    app.logger.info("Callback payload: " + json.dumps(payload))
 
     status = payload['status']
     task = payload['task']
@@ -832,6 +1012,10 @@ def callback():
         providername = payload['cloudProviderName']
     else:
         providername = ''
+    if 'statusReason' in payload:
+        status_reason = payload['statusReason']
+    else:
+        status_reason = ''
     rf = 0
 
     user = get_user(payload['createdBy']['subject'])
@@ -844,12 +1028,16 @@ def callback():
         st = dep['status']
         ts = dep['task']
         rf = dep['feedbackrequired']
+        rs = dep['statusReason']
         if 'cloudProviderName' in dep:
             pn = dep['cloudProviderName']
         else:
             pn = ''
-        if st != status or ts != task or pn != providername:
+        if st != status or ts != task or pn != providername or status_reason != rs:
             # get user from database
+            connection = None
+            cursor = None
+
             try:
                 connection = getdbconnection()
                 cursor = connection.cursor()
@@ -865,31 +1053,36 @@ def callback():
                     endpoint = payload['outputs']['endpoint']
                 else:
                     endpoint = dep['endpoint']
-                update_query = "UPDATE `deployments` SET `update_time` = '{}', `physicalId` = '{}', `status` = '{}', `outputs` = '{}', `task` = '{}', `provider_name` = '{}', `endpoint` = '{}' WHERE `uuid` = '{}'"
+                update_query = "UPDATE `deployments` SET `update_time` = '{}', `physicalId` = '{}', `status` = '{}', " \
+                               "`outputs` = '{}', `task` = '{}', `provider_name` = '{}', `endpoint` = '{}', " \
+                               "`status_reason` = '{}' WHERE `uuid` = '{}'"
                 update_cmd = update_query.format(payload['updateTime'], vphid, status,
-                                                 json.dumps(payload['outputs']), task, providername, endpoint, uuid)
+                                                 json.dumps(payload['outputs']), task, providername, endpoint,
+                                                 status_reason, uuid)
                 cursor.execute(update_cmd)
                 connection.commit()
             except mysql.connector.Error as error:
                 connection.rollback()  # rollback if any exception occured
                 logexception("accessing database {}".format(error))
             finally:
-                if connection.is_connected():
-                    cursor.close()
-                    connection.close()
+                if connection is not None:
+                    if connection.is_connected():
+                        if cursor is not None:
+                            cursor.close()
+                        connection.close()
     else:
-        app.app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
     # send email to user
     if user_email != '' and rf == 1:
-        mail_sender = app.app.config['MAIL_SENDER']
+        mail_sender = app.config['MAIL_SENDER']
         if status == 'CREATE_COMPLETE':
             msg = Message("Deployment complete",
                           sender=mail_sender,
                           recipients=[user_email])
             msg.body = "Your deployment request with uuid: {} has been successfully completed.".format(uuid)
             try:
-                app.mail.send(msg)
+                mail.send(msg)
             except Exception as error:
                 logexception("sending email:".format(error))
 
@@ -899,7 +1092,7 @@ def callback():
                           recipients=[user_email])
             msg.body = "Your deployment request with uuid: {} has failed.".format(uuid)
             try:
-                app.mail.send(msg)
+                mail.send(msg)
             except Exception as error:
                 logexception("sending email:".format(error))
 
@@ -908,3 +1101,39 @@ def callback():
     resp.mimetype = 'application/json'
 
     return resp
+
+
+@app.route('/read_secret_from_vault/<depid>')
+def read_secret_from_vault(depid=None):
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+
+    try:
+        access_token = iam_blueprint.token['access_token']
+
+    except Exception as e:
+        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+        return redirect(url_for('home'))
+
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+        vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
+                                 access_token, vault_secrets_path)
+
+        auth_token = vault.get_auth_token()
+
+        read_token = vault.get_token(auth_token, vault_read_policy, vault_read_token_time_duration, vault_read_token_renewal_duration)
+
+        # retrieval of secret_path and secret_key from the db goes here
+        secret_path = session['userid'] + "/" + dep['vault_secret_uuid']
+        user_key = dep['vault_secret_key']
+
+        response_output = vault.read_secret(read_token, secret_path, user_key)
+
+        vault.revoke_token(auth_token)
+
+        return response_output

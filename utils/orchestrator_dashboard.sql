@@ -1,8 +1,12 @@
+CREATE DATABASE  IF NOT EXISTS `orchestrator_dashboard`
+USE `orchestrator_dashboard`;
+
 --
 -- Table structure for table `deployments`
 --
 
-CREATE TABLE IF NOT EXISTS `deployments` (
+DROP TABLE IF EXISTS `deployments`;
+CREATE TABLE `deployments` (
   `uuid` varchar(36) NOT NULL,
   `creation_time` datetime DEFAULT NULL,
   `update_time` datetime DEFAULT NULL,
@@ -22,6 +26,10 @@ CREATE TABLE IF NOT EXISTS `deployments` (
   `feedback_required` tinyint(1) DEFAULT '1',
   `remote` tinyint(1) DEFAULT '0',
   `issuer` varchar(256) DEFAULT NULL,
+  `storage_encryption` TINYINT(1) DEFAULT '0',
+  `vault_secret_uuid` VARCHAR(36) DEFAULT NULL,
+  `vault_secret_key` VARCHAR(32) DEFAULT NULL,
+  `status_reason` VARCHAR(256) DEFAULT NULL,
   PRIMARY KEY (`uuid`)
 );
 
@@ -29,7 +37,8 @@ CREATE TABLE IF NOT EXISTS `deployments` (
 -- Table structure for table `users`
 --
 
-CREATE TABLE IF NOT EXISTS `users` (
+DROP TABLE IF EXISTS `users`;
+CREATE TABLE `users` (
   `sub` varchar(36) NOT NULL,
   `name` varchar(128) DEFAULT NULL,
   `username` varchar(64) NOT NULL,
