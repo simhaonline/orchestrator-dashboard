@@ -686,6 +686,7 @@ def showdeployments():
         account_info = iam_blueprint.session.get("/userinfo")
 
         if account_info.ok:
+            account_info_json = account_info.json()
 
             # check database
             # if user not found, insert
