@@ -54,6 +54,9 @@ def getdbconnection():
 
 
 toscaDir = app.config.get('TOSCA_TEMPLATES_DIR') + "/"
+tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
+tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
+
 toscaTemplates = []
 for path, subdirs, files in os.walk(toscaDir):
     for name in files:
@@ -62,33 +65,79 @@ for path, subdirs, files in os.walk(toscaDir):
             if name[0] != '.':
                 toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
 
-import_metadata = False
-tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
-if tosca_metadata_dir:
-    import_metadata = True
-    metadata_dict = {}
-    tosca_metadata_path = tosca_metadata_dir + "/"
+toscaInfo = {}
+for tosca in toscaTemplates:
+    with io.open( toscaDir + tosca) as stream:
+       template = yaml.load(stream)
 
-    for tosca in toscaTemplates:
-        # Assign default metadata vaules
-        metadata_dict[tosca] = dict(name=tosca,
-                                    icon=app.root_path+"/static/defaults/default_app.svg")
-        # Search for metadata file
-        for mpath, msubs, mnames in os.walk(tosca_metadata_path):
-            for mname in mnames:
-                if fnmatch(mname, '*.metadata.yml') or fnmatch(mname, '*.metadata.yaml'):
-                    # skip hidden files
-                    if mname[0] != '.':
-                        tosca_metadata_file = os.path.join(mpath, mname)
-                        with io.open(tosca_metadata_file) as metadata_file:
-                            metadata = yaml.load(metadata_file)
-                            template_metadata = metadata["template_metadata"]
-                            if(tosca == template_metadata["name"]):
-                                metadata_dict[tosca] = template_metadata
+       toscaInfo[tosca] = {
+                            "valid": True,
+                            "description": "TOSCA Template",
+                            "metadata": {
+                                "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
+                            },
+                            "inputs": {},
+                            "tabs": {}
+                          }
 
-    toscaTemplates = metadata_dict
+       if 'topology_template' not in template:
+           toscaInfo[tosca]["valid"] = False
 
-tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
+       else:
+
+            if 'description' in template:
+                toscaInfo[tosca]["description"] = template['description']
+
+#            if 'metadata' in template and template['metadata'] is not None:
+#               for k,v in template['metadata'].items():
+#                   toscaInfo[tosca]["metadata"][k] = v
+#
+#               if 'icon' not in template['metadata']:
+#                   toscaInfo[tosca]["metadata"]['icon'] = "xxxx"
+
+            if tosca_metadata_dir:
+                tosca_metadata_path = tosca_metadata_dir + "/"
+                for mpath, msubs, mnames in os.walk(tosca_metadata_path):
+                    for mname in mnames:
+                        if fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
+                                 fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
+                            # skip hidden files
+                            if mname[0] != '.':
+                                tosca_metadata_file = os.path.join(mpath, mname)
+                                with io.open(tosca_metadata_file) as metadata_file:
+                                    metadata_template = yaml.load(metadata_file)
+
+                                    if 'metadata' in metadata_template and metadata_template['metadata'] is not None:
+                                        for k,v in metadata_template['metadata'].items():
+                                            toscaInfo[tosca]["metadata"][k] = v
+                             
+                                        if 'icon' not in metadata_template['metadata']:
+                                            toscaInfo[tosca]["metadata"]['icon'] = "xxxx"
+
+            if 'inputs' in template['topology_template']:
+               toscaInfo[tosca]['inputs'] = template['topology_template']['inputs']
+
+            ## add parameters code here
+            enable_config_form = False
+            tabs = {}
+            if tosca_pars_dir:
+                tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
+                for fpath, subs, fnames in os.walk(tosca_pars_path):
+                    for fname in fnames:
+                        if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
+                                fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
+                            # skip hidden files
+                            if fname[0] != '.':
+                                tosca_pars_file = os.path.join(fpath, fname)
+                                with io.open(tosca_pars_file) as pars_file:
+                                    enable_config_form = True
+                                    pars_data = yaml.load(pars_file)
+                                    toscaInfo[tosca]['inputs'] = pars_data["inputs"]
+                                    if "tabs" in pars_data:
+                                        toscaInfo[tosca]['tabs'] = pars_data["tabs"]
+
+
+app.logger.debug("Extracted TOSCA INFO: " + json.dumps(toscaInfo))
 
 orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
 slamUrl = app.config.get('SLAM_URL')
@@ -605,7 +654,6 @@ def logexception(err):
     app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
 
-@app.route('/dashboard/')
 @app.route('/')
 def home():
     if not iam_blueprint.session.authorized:
@@ -615,13 +663,29 @@ def home():
 
         if account_info.ok:
             account_info_json = account_info.json()
-
             session['userid'] = account_info_json['sub']
             session['username'] = account_info_json['name']
             session['useremail'] = account_info_json['email']
             session['userrole'] = 'user'
             session['gravatar'] = avatar(account_info_json['email'], 26)
             session['organisation_name'] = account_info_json['organisation_name']
+            access_token = iam_blueprint.token['access_token']
+
+            return render_template('portfolio.html', templates=toscaInfo)
+
+    except Exception as e:
+        app.logger.error("Error: " + str(e))
+        return redirect(url_for('logout'))
+
+
+@app.route('/deployments')
+def showdeployments():
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+    try:
+        account_info = iam_blueprint.session.get("/userinfo")
+
+        if account_info.ok:
 
             # check database
             # if user not found, insert
@@ -760,7 +824,7 @@ def depdel(depid=None):
             secret_path = session['userid'] + "/" + dep['vault_secret_uuid']
             delete_secret_from_vault(access_token, secret_path)
 
-    return redirect(url_for('home'))
+    return redirect(url_for('showdeployments'))
 
 
 def delete_secret_from_vault(access_token, secret_path):
@@ -775,69 +839,29 @@ def delete_secret_from_vault(access_token, secret_path):
     vault.delete_secret(delete_token, secret_path)
 
 
-@app.route('/create', methods=['GET', 'POST'])
-def depcreate():
+@app.route('/configure')
+def configure():
     if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
 
     access_token = iam_blueprint.session.token['access_token']
 
-    if request.method == 'GET':
-        return render_template('createdep.html', templates=toscaTemplates, inputs={}, import_metadata=import_metadata)
-    else:
-        selected_tosca = request.form.get('tosca_template')
-
-        with io.open(toscaDir + selected_tosca) as stream:
-            template = yaml.load(stream)
-            if 'topology_template' not in template:
-                flash('Error reading template "' + selected_tosca + '": syntax is not correct.' 
-                                                                    ' Please select another template.')
-                return redirect(url_for('depcreate'))
-
-            inputs = {}
-            if 'inputs' in template['topology_template']:
-                inputs = template['topology_template']['inputs']
-
-            # add parameters code here
-            enable_config_form = False
-            tabs = {}
-            if tosca_pars_dir:
-                tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
-                for fpath, subs, fnames in os.walk(tosca_pars_path):
-                    for fname in fnames:
-                        if fnmatch(fname, os.path.splitext(selected_tosca)[0] + '.parameters.yml') or \
-                                fnmatch(fname, os.path.splitext(selected_tosca)[0] + '.parameters.yaml'):
-                            # skip hidden files
-                            if fname[0] != '.':
-                                tosca_pars_file = os.path.join(fpath, fname)
-                                with io.open(tosca_pars_file) as pars_file:
-                                    enable_config_form = True
-                                    pars_data = yaml.load(pars_file)
-                                    inputs = pars_data["inputs"]
-                                    if "tabs" in pars_data:
-                                        tabs = pars_data["tabs"]
-
-            description = "N/A"
-            if 'description' in template:
-                description = template['description']
 
 
-            try:
-                slas = get_slas(access_token)
-        
-            except Exception as e:
-                flash("Error retrieving SLAs list: \n" + str(e), 'warning')
-                return redirect(url_for('home'))
+    selected_tosca = request.args['selected_tosca']
 
-            return render_template('createdep.html',
-                                   templates=toscaTemplates,
-                                   selectedTemplate=selected_tosca,
-                                   import_metadata=import_metadata,
-                                   description=description,
-                                   inputs=inputs,
-                                   slas=slas,
-                                   enable_config_form=enable_config_form,
-                                   tabs=tabs)
+    try:
+        slas = get_slas(access_token)
+
+    except Exception as e:
+        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+        return redirect(url_for('home'))
+
+    return render_template('createdep.html',
+                           template=toscaInfo[selected_tosca],
+                           selectedTemplate=selected_tosca,
+                           slas=slas,
+                           enable_config_form=enable_config_form)
 
 
 def add_sla_to_template(template, sla_id):
@@ -910,7 +934,7 @@ def createdep():
 
             app.logger.debug("Parameters: " + json.dumps(inputs))
 
-            payload = {"template": yaml.dump(template, default_flow_style=False), "parameters": inputs,
+            payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False), "parameters": inputs,
                        "callback": callback_url}
 
         # body= json.dumps(payload)
