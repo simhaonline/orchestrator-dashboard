@@ -671,23 +671,6 @@ def home():
             session['organisation_name'] = account_info_json['organisation_name']
             access_token = iam_blueprint.token['access_token']
 
-            return render_template('portfolio.html', templates=toscaInfo)
-
-    except Exception as e:
-        app.logger.error("Error: " + str(e))
-        return redirect(url_for('logout'))
-
-
-@app.route('/deployments')
-def showdeployments():
-    if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
-    try:
-        account_info = iam_blueprint.session.get("/userinfo")
-
-        if account_info.ok:
-            account_info_json = account_info.json()
-
             # check database
             # if user not found, insert
             #
@@ -728,25 +711,35 @@ def showdeployments():
                         if cursor is not None:
                             cursor.close()
                         connection.close()
-            #
-            #
 
-            access_token = iam_blueprint.token['access_token']
+            return render_template('portfolio.html', templates=toscaInfo)
 
-            headers = {'Authorization': 'bearer %s' % access_token}
+    except Exception as e:
+        app.logger.error("Error: " + str(e))
+        return redirect(url_for('logout'))
 
-            url = orchestratorUrl + "/deployments?createdBy=me&page={}&size={}".format(0, 999999)
-            response = requests.get(url, headers=headers)
 
-            deployments = {}
-            if not response.ok:
-                flash("Error retrieving deployment list: \n" + response.text, 'warning')
-            else:
-                deployments = response.json()["content"]
-                deployments = updatedeploymentsstatus(deployments, account_info_json['sub'])
+@app.route('/deployments')
+def showdeployments():
 
-                # print(deployments)
-            return render_template('deployments.html', deployments=deployments)
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+
+    try:
+        access_token = iam_blueprint.token['access_token']
+
+        headers = {'Authorization': 'bearer %s' % access_token}
+
+        url = orchestratorUrl + "/deployments?createdBy=me&page={}&size={}".format(0, 999999)
+        response = requests.get(url, headers=headers)
+
+        deployments = {}
+        if not response.ok:
+            flash("Error retrieving deployment list: \n" + response.text, 'warning')
+        else:
+            deployments = response.json()["content"]
+            deployments = updatedeploymentsstatus(deployments, session['userid'])
+        return render_template('deployments.html', deployments=deployments)
     except Exception as error:
         logexception(error)
         return redirect(url_for('logout'))
@@ -998,7 +991,7 @@ def createdep():
                             cursor.close()
                         connection.close()
 
-        return redirect(url_for('home'))
+        return redirect(url_for('showdeployments'))
 
     except Exception as e:
         flash("Error submitting deployment:" + str(e) + ". Please retry")
