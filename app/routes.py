@@ -858,6 +858,8 @@ def configure():
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
         return redirect(url_for('home'))
 
+    print(enable_config_form)
+
     return render_template('createdep.html',
                            template=toscaInfo[selected_tosca],
                            selectedTemplate=selected_tosca,
