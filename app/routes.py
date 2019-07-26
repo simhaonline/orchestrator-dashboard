@@ -153,7 +153,7 @@ if vault_url:
    vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
    vault_read_token_renewal_duration = app.config.get("READ_TOKEN_RENEWAL_TIME_DURATION")
    vault_write_policy = app.config.get("WRITE_POLICY")
-   vaulr_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
+   vault_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
    vault_wtite_token_renewal_time_duration = app.config.get("WRITE_TOKEN_RENEWAL_TIME_DURATION")
    vault_delete_policy = app.config.get("DELETE_POLICY")
    vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
@@ -1003,7 +1003,7 @@ def create_vault_wrapping_token(access_token):
 
     auth_token = vault.get_auth_token()
 
-    wrapping_token = vault.get_wrapping_token(vault_wrapping_token_time_duration, auth_token, vault_write_policy, vaulr_write_token_time_duration, vault_wtite_token_renewal_time_duration)
+    wrapping_token = vault.get_wrapping_token(vault_wrapping_token_time_duration, auth_token, vault_write_policy, vault_write_token_time_duration, vault_wtite_token_renewal_time_duration)
 
     return wrapping_token
 
