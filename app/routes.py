@@ -783,7 +783,11 @@ def depoutput(depid=None):
         inp = dep[
             'inputs']  # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
         links = json.dumps(dep['links'])
-        return render_template('depoutput.html', deployment=dep, inputs=inp, outputs=output, links=links)
+        return render_template('depoutput.html',
+                               deployment=dep,
+                               inputs=inp,
+                               outputs=output,
+                               links=links)
 
 
 @app.route('/templatedb/<depid>')
