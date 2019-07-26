@@ -43,9 +43,10 @@
           <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
           <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
+          <p><b>ENDPOINT</b> {{deployment.endpoint}}</p>
 
-          {% for key, value in inputs.items() %}
-          {% if 'storage_encryption' in key and value == 'True' %}	
+          <!-- Vault integration  if -->
+          {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
           <hr/>
           <button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('read_secret_from_vault', depid=deployment.uuid) }}' )">
             <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
@@ -69,7 +70,6 @@
             </div>
           </div>
           {% endif %}
-          {% endfor %}
 
         </div>
         <div class="tab-pane fade" id="InputValues">
@@ -88,8 +88,6 @@
     </div>
 
 </div>
-
-<p id="demo"></p>
 
 <script>
   var myObj, x;
@@ -144,7 +142,6 @@ function fillModal(secret)
       });
       $("#newModal").modal("show");
     });
-
 }
 
 function stopSpinner()
