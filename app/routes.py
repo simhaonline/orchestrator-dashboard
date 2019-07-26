@@ -735,7 +735,7 @@ def showdeployments():
 
         deployments = {}
         if not response.ok:
-            flash("Error retrieving deployment list: \n" + response.text, 'warning')
+            return redirect(url_for('login'))
         else:
             deployments = response.json()["content"]
             deployments = updatedeploymentsstatus(deployments, session['userid'])
