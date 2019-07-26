@@ -1133,7 +1133,7 @@ def read_secret_from_vault(depid=None):
         access_token = iam_blueprint.token['access_token']
 
     except Exception as e:
-        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+        flash("Token expired, realod page.", 'warning')
         return redirect(url_for('home'))
 
     # retrieve deployment from DB
