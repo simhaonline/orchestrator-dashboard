@@ -783,11 +783,62 @@ def depoutput(depid=None):
         inp = dep[
             'inputs']  # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
         links = json.dumps(dep['links'])
+
+        volume_state = dep['storage_encryption']
+        if volume_state == 1:
+          volume_state = encrypted_volume_status(depid)
+
+        endpoint_state = str( is_endpoint_online(depid) )
+
         return render_template('depoutput.html',
                                deployment=dep,
+                               volume_state=volume_state,
+                               endpoint_state=endpoint_state,
                                inputs=inp,
                                outputs=output,
                                links=links)
+
+
+def encrypted_volume_status(depid=None):
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+        if 'node_ip' in dep['outputs']:
+            api_status = 'https://' + dep['outputs']['node_ip'] + ':5000/luksctl_api/v1.0/status'
+            try:
+              response = requests.get(api_status, verify=False)
+            except:
+              return 'unavailable'
+
+            deserialized_response = json.loads(response.text)
+            return deserialized_response['volume_state']
+
+        else:
+            return 'unavailable'
+
+
+def is_endpoint_online(depid=None):
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+        if 'endpoint' in dep['outputs']:
+            endpoint = dep['outputs']['endpoint'] + '/'
+            try:
+              response = requests.get(endpoint, verify=False)
+            except:
+              return 'unavailable'
+
+            return response.status_code
+
+        else:
+
+            return 'Unavailable'
 
 
 @app.route('/templatedb/<depid>')
@@ -1158,3 +1209,80 @@ def read_secret_from_vault(depid=None):
         vault.revoke_token(auth_token)
 
         return response_output
+
+
+@app.route('/encrypted_volume_open/<depid>')
+def encrypted_volume_open(depid=None):
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+
+    try:
+        access_token = iam_blueprint.token['access_token']
+
+    except Exception as e:
+        flash("Token expired, realod page.", 'warning')
+        return redirect(url_for('home'))
+
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+        vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
+                                 access_token, vault_secrets_path)
+
+        auth_token = vault.get_auth_token()
+
+        wrapping_read_token = vault.get_wrapping_token('20m', auth_token, 'read_only', '20m', '20m')
+
+        # retrieval of secret_path and secret_key from the db goes here
+        secret_path = session['userid'] + "/" + dep['vault_secret_uuid']
+        user_key = dep['vault_secret_key']
+
+        payload = {
+                "vault_url": vault_url,
+                "vault_token": wrapping_read_token,
+                "secret_root": vault_secrets_path,
+                "secret_path": secret_path,
+                "secret_key": user_key
+               }
+
+        api_open = 'https://' + dep['outputs']['node_ip'] + ':5000/luksctl_api/v1.0/open'
+
+        response = requests.post(api_open, json=payload, verify=False)
+
+        deserialized_response = json.loads(response.text)
+
+        return deserialized_response['volume_state']
+
+
+@app.route('/galaxy_startup/<depid>')
+def galaxy_startup(depid=None):
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
+
+    try:
+        access_token = iam_blueprint.token['access_token']
+
+    except Exception as e:
+        flash("Token expired, realod page.", 'warning')
+        return redirect(url_for('home'))
+
+    # retrieve deployment from DB
+    dep = get_deployment(depid)
+    if dep == {}:
+        return redirect(url_for('home'))
+    else:
+
+        payload = {
+                "endpoint": dep['outputs']['endpoint']
+               }
+
+        api_startup = 'http://' + dep['outputs']['node_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+
+        response = requests.post(api_startup, json=payload, verify=False)
+
+        deserialized_response = json.loads(response.text)
+
+        return deserialized_response['galaxy']

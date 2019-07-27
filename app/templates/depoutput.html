@@ -43,7 +43,7 @@
           <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
           <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
-          <p><b>ENDPOINT</b> {{deployment.endpoint}}</p>
+          <p><b>ENDPOINT</b> <a href="{{deployment.endpoint}}" target="_blank">{{deployment.endpoint}}</a></p>
 
           <!-- Vault integration  if -->
           {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
@@ -70,6 +70,47 @@
             </div>
           </div>
           {% endif %}
+
+          {% if '/galaxy' in deployment.endpoint %}
+          <hr/>
+          <p>
+            <b>Galaxy status: </b>
+            {% if endpoint_state == "200" or endpoint_state == "302" %}
+              <span class="badge badge-pill badge-success"><span class="fas fa-globe-europe mr-2"></span> On-line </span>
+            {% else %}
+              <span class="badge badge-pill badge-danger"><span class="fas fa-unlink mr-2"></span> Off-line </span>
+              {% if volume_state == "unmounted" %}
+                <span class="d-inline-block" tabindex="0" data-toggle="tooltip" title="Please mount the encrypted storage volume before">
+                <button type="button" class="btn btn-outline-danger btn-sm" style="pointer-events: none;" disabled>
+                  <span class="fas fa-key mr-2"></span>Try to restart Galaxy
+                </button>
+                </span>
+              {% else %}
+                <button id="galaxyStartupBtn" class="btn btn-outline-danger btn-sm" role="button" onclick="galaxyStartup( href='{{ url_for('galaxy_startup', depid=deployment.uuid) }}' )">
+                  <span class="fas fa-key mr-2"></span>Try to restart Galaxy
+                </button>
+              {% endif %}
+            {% endif %}
+          </p>
+          {% endif %}
+
+          <!-- Start encryption volume status if -->
+          {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
+          <p>
+            <b>Encrypted volume status: </b>
+            {% if volume_state == "mounted" %}
+              <span class="badge badge-pill badge-success"><span class="fas fa-lock-open mr-2"></span> Mounted </span>
+            {% elif volume_state == "unmounted" %}
+              <span class="badge badge-pill badge-danger"><span class="fas fa-lock mr-2"></span> Unmounted </span>
+              <button type="button" id="luksOpenBtn" class="btn btn-outline-danger btn-sm" onclick="mountLUKSVolume( href='{{ url_for('encrypted_volume_open', depid=deployment.uuid) }}' )">
+                <span class="fas fa-key mr-2"></span>Unlock and mount volume
+              </button>
+            {% else %}
+              <span class="badge badge-pill badge-warning"> Unavailable</span>
+            {% endif %}
+          </p>
+          {% endif %}
+          <!-- End encryption volume status if -->
 
         </div>
         <div class="tab-pane fade" id="InputValues">
@@ -147,6 +188,35 @@ function fillModal(secret)
 function stopSpinner()
 {
   $("#retrieveBtn").html( `<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase` );
+}
+</script>
+
+<script>
+$(document).ready(function(){
+  $('[data-toggle="tooltip"]').tooltip()
+});
+</script>
+
+<script>
+async function galaxyStartup(url)
+{
+  let response = await fetch(url)
+  let result = await response;
+  encrypted_volume_status = await response.text()
+  reload_page()
+}
+
+async function mountLUKSVolume(url)
+{
+  let response = await fetch(url)
+  let result = await response;
+  encrypted_volume_status = await response.text()
+  reload_page()
+}
+
+function reload_page()
+{
+  location.reload();
 }
 </script>
 
