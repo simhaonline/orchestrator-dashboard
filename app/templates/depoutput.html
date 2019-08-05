@@ -96,6 +96,7 @@
 
           <!-- Start encryption volume status if -->
           {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
+          <hr/>
           <p>
             <b>Encrypted volume status: </b>
             {% if volume_state == "mounted" %}
