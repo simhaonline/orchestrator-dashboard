@@ -39,6 +39,7 @@
     <!-- Cookie Consent -->
     <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.css" />
     <script src="//cdnjs.cloudflare.com/ajax/libs/cookieconsent2/3.0.3/cookieconsent.min.js"></script>
+
     <script>
     window.addEventListener("load", function(){
         window.cookieconsent.initialise({
@@ -81,6 +82,8 @@
                             <img class="rounded-circle" src="{{ session['gravatar'] }}"</src> {{ session['username'] }}<span class="caret"></span>
                         </a>
                         <div class="dropdown-menu">
+                            <a class="dropdown-item" href="{{ url_for('ssh_keys') }}">SSH keys</a>
+                            <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a>
                         </div>
 	            </li>
