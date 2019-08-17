@@ -190,6 +190,8 @@ function fillModal(secret)
 function stopSpinner()
 {
   $("#retrieveBtn").html( `<span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase` );
+  $("#retrieveBtn").prop('disabled', false); 
+
 }
 </script>
 
