@@ -210,7 +210,7 @@ async function galaxyStartup(url)
 
 $(document).ready(function () {
     $("#galaxyStartupBtn").click(function () {
-        $(this).attr("disabled", "disabled");
+        $(this).prop('disabled', true);
         // add spinner to button
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> This may take some time. Please wait!` );
         return true;
@@ -227,7 +227,7 @@ async function mountLUKSVolume(url)
 
 $(document).ready(function () {
     $("#luksOpenBtn").click(function () {
-        $(this).attr("disabled", "disabled");
+        $(this).prop('disabled', true);
         // add spinner to button
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...` );
         return true;
