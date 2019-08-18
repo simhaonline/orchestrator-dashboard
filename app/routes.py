@@ -1292,9 +1292,9 @@ def galaxy_startup(depid=None):
                }
 
         if 'node_ip' in dep['outputs']:
-            api_startup = 'http://' + dep['outputs']['node_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+            api_startup = 'http://' + dep['outputs']['node_ip'] + ':5001/galaxyctl_api/v1.0/galaxy-startup'
         elif 'cluster_ip' in dep['outputs']:
-            api_startup = 'http://' + dep['outputs']['cluster_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+            api_startup = 'http://' + dep['outputs']['cluster_ip'] + ':5001/galaxyctl_api/v1.0/galaxy-startup'
         else:
             return 'unavailable'
 
