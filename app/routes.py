@@ -808,16 +808,19 @@ def encrypted_volume_status(depid=None):
 
         if 'node_ip' in dep['outputs']:
             api_status = 'https://' + dep['outputs']['node_ip'] + ':5000/luksctl_api/v1.0/status'
-            try:
-              response = requests.get(api_status, verify=False)
-            except:
-              return 'unavailable'
-
-            deserialized_response = json.loads(response.text)
-            return deserialized_response['volume_state']
-
+        elif 'cluster_ip' in dep['outputs']:
+            api_status = 'https://' + dep['outputs']['cluster_ip'] + ':5000/luksctl_api/v1.0/status'
         else:
             return 'unavailable'
+
+        try:
+            response = requests.get(api_status, verify=False)
+        except:
+            return 'unavailable'
+
+        deserialized_response = json.loads(response.text)
+        return deserialized_response['volume_state']
+
 
 
 def is_endpoint_online(depid=None):
@@ -1252,7 +1255,12 @@ def encrypted_volume_open(depid=None):
                 "secret_key": user_key
                }
 
-        api_open = 'https://' + dep['outputs']['node_ip'] + ':5000/luksctl_api/v1.0/open'
+        if 'node_ip' in dep['outputs']:
+            api_open = 'https://' + dep['outputs']['node_ip'] + ':5000/luksctl_api/v1.0/open'
+        elif 'cluster_ip' in dep['outputs']:
+            api_open = 'https://' + dep['outputs']['cluster_ip'] + ':5000/luksctl_api/v1.0/open'
+        else:
+            return 'unavailable'
 
         response = requests.post(api_open, json=payload, verify=False)
 
@@ -1283,7 +1291,12 @@ def galaxy_startup(depid=None):
                 "endpoint": dep['outputs']['endpoint']
                }
 
-        api_startup = 'http://' + dep['outputs']['node_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+        if 'node_ip' in dep['outputs']:
+            api_startup = 'http://' + dep['outputs']['node_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+        elif 'cluster_ip' in dep['outputs']:
+            api_startup = 'http://' + dep['outputs']['cluster_ip'] + '/galaxyctl_api/v1.0/galaxy-startup'
+        else:
+            return 'unavailable'
 
         response = requests.post(api_startup, json=payload, verify=False)
 

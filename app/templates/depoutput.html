@@ -16,6 +16,7 @@
         <div class="col-md-6 text-right">
           <!-- Button -->
           <button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+          <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><span class='fas fa-sync mr-2'></span>Refresh</button>
         </div>
       </div> <!-- / .row -->
     </div>
