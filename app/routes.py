@@ -739,7 +739,29 @@ def showdeployments():
         else:
             deployments = response.json()["content"]
             deployments = updatedeploymentsstatus(deployments, session['userid'])
-        return render_template('deployments.html', deployments=deployments)
+
+        inputs={}
+        for deployment in deployments:
+            depid = deployment['uuid']
+            dep = get_deployment(depid)
+
+            inputs[depid] = {
+                             "galaxy_flavor": dep['inputs']['flavor'],
+                             "infra_config": "single_vm",
+                             "instance_flavor": {
+                                                 "fe": "",
+                                                 "wn": ""
+                                                },
+                            }
+            
+            if 'instance_flavor' in dep['inputs']:
+                inputs[depid]['instance_flavor']['fe'] = dep['inputs']['instance_flavor']
+            elif 'fe_instance_flavor' in dep['inputs']:
+                inputs[depid]['infra_config'] = 'cluster'
+                inputs[depid]['instance_flavor']['fe'] = dep['inputs']['fe_instance_flavor']
+                inputs[depid]['instance_flavor']['wn'] = dep['inputs']['wn_instance_flavor']
+
+        return render_template('deployments.html', deployments=deployments, inputs=inputs)
     except Exception as error:
         logexception(error)
         return redirect(url_for('logout'))
