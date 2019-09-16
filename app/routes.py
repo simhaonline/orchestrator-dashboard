@@ -1228,7 +1228,7 @@ def send_email(subject, sender, recipients, html_body):
     Thread(target=send_async_email, args=(app, msg)).start()
 
 
-app.route('/read_secret_from_vault/<depid>')
+@app.route('/read_secret_from_vault/<depid>')
 def read_secret_from_vault(depid=None):
     if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
