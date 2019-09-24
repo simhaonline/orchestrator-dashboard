@@ -922,6 +922,7 @@ def createdep():
                 vault_secret_key = 'secret'
 
             if storage_encryption == 1:
+                inputs['vault_url'] = vault_url
                 vault_secret_uuid = str(uuid_generator.uuid4())
                 if 'vault_secret_key' in inputs:
                     vault_secret_key = inputs['vault_secret_key']
