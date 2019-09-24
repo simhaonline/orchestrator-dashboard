@@ -45,6 +45,7 @@
           <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
           <p><b>ENDPOINT</b> {{deployment.endpoint}}</p>
 
+          {% if deployment.status == 'CREATE_COMPLETE' %} <!-- Display these options only if the deployment is complete -->
           <!-- Vault integration  if -->
           {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
           <hr/>
@@ -69,8 +70,8 @@
               </div>
             </div>
           </div>
-          {% endif %}
-
+          {% endif %}<!-- End encryption volume status if -->
+          {% endif %}<!-- End instance status if -->
         </div>
         <div class="tab-pane fade" id="InputValues">
           <br>
