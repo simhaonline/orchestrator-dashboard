@@ -1205,10 +1205,6 @@ def read_secret_from_vault(depid=None):
 
     access_token = iam_blueprint.session.token['access_token']
 
-    except Exception as e:
-        flash("Token expired, realod page.", 'warning')
-        return redirect(url_for('home'))
-
     # retrieve deployment from DB
     dep = get_deployment(depid)
     if dep == {}:
@@ -1234,16 +1230,10 @@ def read_secret_from_vault(depid=None):
 
 
 @app.route('/encrypted_volume_open/<depid>')
+@authorized_with_valid_token 
 def encrypted_volume_open(depid=None):
-    if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
 
-    try:
-        access_token = iam_blueprint.token['access_token']
-
-    except Exception as e:
-        flash("Token expired, realod page.", 'warning')
-        return redirect(url_for('home'))
+    access_token = iam_blueprint.session.token['access_token']
 
     # retrieve deployment from DB
     dep = get_deployment(depid)
@@ -1285,16 +1275,10 @@ def encrypted_volume_open(depid=None):
 
 
 @app.route('/galaxy_startup/<depid>')
+@authorized_with_valid_token 
 def galaxy_startup(depid=None):
-    if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
 
-    try:
-        access_token = iam_blueprint.token['access_token']
-
-    except Exception as e:
-        flash("Token expired, realod page.", 'warning')
-        return redirect(url_for('home'))
+    access_token = iam_blueprint.session.token['access_token']
 
     # retrieve deployment from DB
     dep = get_deployment(depid)
@@ -1394,7 +1378,7 @@ def update_ssh_key(subject):
 
 def check_ssh_key(key):
 
-    # credits to: https://gist.github.com/piyushbansal/5243418
+    # credits to: https://gist.github.com/piyushbansal/5243418
 
     import base64,struct,sys,binascii
     array=key.split();
