@@ -770,6 +770,8 @@ def depoutput(depid=None):
 
 @app.route('/templatedb/<depid>')
 def deptemplatedb(depid):
+    if not iam_blueprint.session.authorized:
+        return redirect(url_for('login'))
 
     # retrieve deployment from DB
     dep = get_deployment(depid)
