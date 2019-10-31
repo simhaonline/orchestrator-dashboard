@@ -37,6 +37,7 @@ Create the `config.json` file (see the [example](app/config-sample.json)) settin
 | SUPPORT_EMAIL | Email address that will be shown in case of errors | N | ""
 | ENABLE_ADVANCED_MENU | Toggle to enable/disable the advanced menu <br>Valid values: yes, no | N | no
 | EXTERNAL_LINKS | List of dictionaries ({ "url": "example.com" , "menu_item_name": "Example link"}) specifying links that will be shown under the "External Links" menu | N | []
+| LOG_LEVEL | Set Logging level | N | info
 
 Clone the tosca-templates repository to get a set of tosca templates that the dashboard will load, e.g.:
 ````
