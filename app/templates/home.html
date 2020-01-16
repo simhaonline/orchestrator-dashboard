@@ -8,20 +8,58 @@
 }
 </style-->
 
-<div class = "jumbotron jumbotron-fluid">
+<div class = "jumbotron jumbotron-fluid jumbotron-custom">
   <div class="container">
     <div class="row">
-     <div class="col-lg-7">
-     <h1 class="display-3">Welcome!</h1>
-     <p>This is the PaaS Orchestrator Dashboard.</p>
-     <p>
-        <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Login with IAM &raquo;</a>
-     </p>
-     </div>
-     <div class="col-lg-5">
-	<img src="static/images/orchestrator-logo.png"></img>
-     </div>
-  </div>
+      <div class="col-lg-7">
+        <h1 class="display-3">Welcome!</h1>
+        <p>This is the PaaS Orchestrator Dashboard.</p>
+        <p>
+          <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Login with IAM &raquo;</a>
+        </p>
+      </div>
+      <div class="col-lg-5">
+        <img src="static/images/logo_infn.png"></img>
+      </div>
+    </div>
+  </div>	  
 </div>
+
+<style>
+.banner {
+#box-sizing: border-box;
+width: 100%;
+height: 150px;
+#padding: 3px;
+background-image: url(/static/images/banner.jpg);
+background-size: 100% 100%;
+}	
+.jumbotron-custom {
+    background: #1C486F;
+    background-image: url(/static/images/network.png);	    
+    background-repeat: no-repeat;
+    background-position: bottom;
+    color: #ffffff;
+    padding-bottom:250px;
+    font-weight: bold;
+    font-family: 'Thasadith', sans-serif;
+}
+
+.jumbotron-custom2 {
+
+  padding: 2rem 1rem;
+
+  margin-bottom: 2rem;
+
+  border-radius: 0.3rem;
+
+background: #000064;  /* old browsers fallback color*/
+
+background: -webkit-linear-gradient(to right, #1BADD8, #00003E);
+
+background: linear-gradient(to right, #1BADD8, #00003E);
+
+}
+</style>
 {% endblock %}
 
