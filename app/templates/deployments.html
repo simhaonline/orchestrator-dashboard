@@ -124,6 +124,8 @@
 					    {% if k == "node_creds" %}
 					    <p><small><strong>ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></small></p>
 				            <p><small><strong>ssh_login</strong>: {{ v['user'] }}</small></p>		    
+					    {% elif "endpoint" in k %}
+					    <p><small><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></small></p>
 					    {% else %}    
 					    <p><small><strong>{{k}}</strong>: {{v}}</small></p>
 					    {% endif %}
