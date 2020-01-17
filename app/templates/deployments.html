@@ -121,7 +121,12 @@
                                         <div class="tab-pane pl-3 pt-3 fade border border-primary" id="outputs{{deployment.uuid}}" role="tabpanel" aria-labelledby="tab-outputs{{deployment.uuid}}">
                                             <!--p><small><pre>{{deployment.outputs | tojson_pretty() | safe }}</pre></small></p-->
                                             {% for k,v in deployment.outputs.items() %}
-                                            <p><small><strong>{{k}}</strong>: {{v}}</small></p>
+					    {% if k == "node_creds" %}
+					    <p><small><strong>ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></small></p>
+				            <p><small><strong>ssh_login</strong>: {{ v['user'] }}</small></p>		    
+					    {% else %}    
+					    <p><small><strong>{{k}}</strong>: {{v}}</small></p>
+					    {% endif %}
                                             {% endfor %}
                                         </div>
                                     </div>
