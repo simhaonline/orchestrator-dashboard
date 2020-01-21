@@ -122,8 +122,8 @@
                                             <!--p><small><pre>{{deployment.outputs | tojson_pretty() | safe }}</pre></small></p-->
                                             {% for k,v in deployment.outputs.items() %}
 					    {% if "node_creds" in k %}
-					    <p><small><strong>ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></small></p>
-				            <p><small><strong>ssh_login</strong>: {{ v['user'] }}</small></p>		    
+					    <p><small><strong>{{k}}.ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></small></p>
+					    <p><small><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</small></p>		    
 					    {% elif "endpoint" in k %}
 					    <p><small><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></small></p>
 					    {% else %}    
