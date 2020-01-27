@@ -37,7 +37,7 @@ def loadToscaTemplates(directory):
 
    toscaTemplates = []
    for path, subdirs, files in os.walk(directory):
-      for name in files:
+      for name in sorted(files):
            if fnmatch(name, "*.yml") or fnmatch(name, "*.yaml"):
                # skip hidden files
                if name[0] != '.':
@@ -56,7 +56,8 @@ def extractToscaInfo(toscaDir, tosca_pars_dir, toscaTemplates):
                                 "valid": True,
                                 "description": "TOSCA Template",
                                 "metadata": {
-                                    "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
+                                    "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png",
+                                    "allowed_groups": ['*']
                                 },
                                 "enable_config_form": False,
                                 "inputs": {},
