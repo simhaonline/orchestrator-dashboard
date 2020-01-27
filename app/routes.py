@@ -323,6 +323,7 @@ def delete_secret_from_vault():
     jwt_token=utils.exchange_token_with_audience(settings.iamUrl, app.config['IAM_CLIENT_ID'], app.config['IAM_CLIENT_SECRET'],access_token,settings.vault_audience)
     vault_client = vault.VaultClient(settings.orchestratorConf['vault_url'],jwt_token,settings.vault_role)
     path = "services_credential/" + serviceid
+    vault_client.delete_service_creds(path)
 
     flash("Credentials successfully deleted!", 'info')
     
