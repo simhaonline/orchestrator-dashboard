@@ -1,4 +1,5 @@
-from app import app, iam_blueprint, iam_base_url, sla as sla, mail
+from app import app, iam_blueprint, sla as sla, mail, settings, utils
+from werkzeug.exceptions import Forbidden
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -12,18 +13,18 @@ import sys
 from fnmatch import fnmatch
 from hashlib import md5
 from functools import wraps
+from packaging import version
 import mysql.connector
 from dateutil import parser
 import uuid as uuid_generator
 
 # Hashicorp vault support integration
 from app.vault_integration import VaultIntegration
+iam_base_url = settings.iamUrl
+iam_client_id = settings.iamClientID
+iam_client_secret = settings.iamClientSecret
 
-iam_base_url = app.config['IAM_BASE_URL']
-iam_client_id = app.config.get('IAM_CLIENT_ID')
-iam_client_secret = app.config.get('IAM_CLIENT_SECRET')
-
-issuer = iam_base_url
+issuer = settings.iamUrl
 if not issuer.endswith('/'):
     issuer += '/'
 db_host = app.config['DB_HOST']
@@ -32,19 +33,7 @@ db_user = app.config['DB_USER']
 db_password = app.config['DB_PASSWORD']
 db_name = app.config['DB_NAME']
 
-
-def to_pretty_json(value):
-    return json.dumps(value, sort_keys=True,
-                      indent=4, separators=(',', ': '))
-
-
-app.jinja_env.filters['tojson_pretty'] = to_pretty_json
-
-
-def avatar(email, size):
-    digest = md5(email.lower().encode('utf-8')).hexdigest()
-    return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)
-
+app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 
 def getdbconnection():
     cnx = mysql.connector.connect(user=db_user,
@@ -53,89 +42,15 @@ def getdbconnection():
                                   database=db_name)
     return cnx
 
+toscaTemplates = utils.loadToscaTemplates(settings.toscaDir)
+toscaInfo = utils.extractToscaInfo(settings.toscaDir,settings.toscaParamsDir,toscaTemplates,settings.toscaMetadataDir)
 
-toscaDir = app.config.get('TOSCA_TEMPLATES_DIR') + "/"
-tosca_pars_dir = app.config.get('TOSCA_PARAMETERS_DIR')
-tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
-orchestratorUrl = app.config.get('ORCHESTRATOR_URL')
-imUrl = app.config.get('IM_URL')
+app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
+app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links) )
+app.logger.debug("ENABLE_ADVANCED_MENU: " + str(settings.enable_advanced_menu) )
 
-toscaTemplates = []
-for path, subdirs, files in os.walk(toscaDir):
-    for name in files:
-        if fnmatch(name, "*.yml") or fnmatch(name, "*.yaml"):
-            # skip hidden files
-            if name[0] != '.':
-                toscaTemplates.append(os.path.relpath(os.path.join(path, name), toscaDir))
-
-toscaInfo = {}
-for tosca in toscaTemplates:
-    with io.open( toscaDir + tosca) as stream:
-       template = yaml.full_load(stream)
-
-       toscaInfo[tosca] = {
-                            "valid": True,
-                            "description": "TOSCA Template",
-                            "metadata": {
-                                "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
-                            },
-                            "enable_config_form": False,
-                            "inputs": {},
-                            "tabs": {}
-                          }
-
-       if 'topology_template' not in template:
-           toscaInfo[tosca]["valid"] = False
-
-       else:
-
-            if 'description' in template:
-                toscaInfo[tosca]["description"] = template['description']
-
-            if 'metadata' in template and template['metadata'] is not None:
-               for k,v in template['metadata'].items():
-                   toscaInfo[tosca]["metadata"][k] = v
-
-            if tosca_metadata_dir:
-                tosca_metadata_path = tosca_metadata_dir + "/"
-                for mpath, msubs, mnames in os.walk(tosca_metadata_path):
-                    for mname in mnames:
-                        if fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
-                                 fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
-                            # skip hidden files
-                            if mname[0] != '.':
-                                tosca_metadata_file = os.path.join(mpath, mname)
-                                with io.open(tosca_metadata_file) as metadata_file:
-                                    metadata_template = yaml.full_load(metadata_file)
-
-                                    if 'metadata' in metadata_template and metadata_template['metadata'] is not None:
-                                        for k,v in metadata_template['metadata'].items():
-                                            toscaInfo[tosca]["metadata"][k] = v
-                             
-            if 'inputs' in template['topology_template']:
-               toscaInfo[tosca]['inputs'] = template['topology_template']['inputs']
-
-            ## add parameters code here
-            tabs = {}
-            if tosca_pars_dir:
-                tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
-                for fpath, subs, fnames in os.walk(tosca_pars_path):
-                    for fname in fnames:
-                        if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
-                                fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
-                            # skip hidden files
-                            if fname[0] != '.':
-                                tosca_pars_file = os.path.join(fpath, fname)
-                                with io.open(tosca_pars_file) as pars_file:
-                                    toscaInfo[tosca]['enable_config_form'] = True
-                                    pars_data = yaml.full_load(pars_file)
-                                    toscaInfo[tosca]['inputs'] = pars_data["inputs"]
-                                    if "tabs" in pars_data:
-                                        toscaInfo[tosca]['tabs'] = pars_data["tabs"]
-
-
-app.logger.debug("Extracted TOSCA INFO: " + json.dumps(toscaInfo))
-
+#______________________________________
+# vault section
 vault_url = app.config.get('VAULT_URL')
 if vault_url:
    app.config.from_json('vault-config.json')
@@ -152,6 +67,19 @@ if vault_url:
    vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
    vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
+@app.before_request
+def before_request_checks():
+    if 'external_links' not in session:
+       session['external_links'] = settings.external_links
+    if 'enable_advanced_menu' not in session:
+       session['enable_advanced_menu'] = settings.enable_advanced_menu
+
+def validate_configuration():
+   if not settings.orchestratorConf.get('im_url'):
+       app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
+       access_token = iam_blueprint.session.token['access_token']
+       configuration = utils.getOrchestratorConfiguration(settings.orchestratorUrl, access_token)
+       settings.orchestratorConf = configuration
 
 def authorized_with_valid_token(f):
     @wraps(f)
@@ -161,9 +89,11 @@ def authorized_with_valid_token(f):
         if not iam_blueprint.session.authorized or 'username' not in session:
            return redirect(url_for('login'))
 
-        if iam_blueprint.session.token['expires_in'] < 20:
+        if iam_blueprint.session.token['expires_in'] < 60:
             app.logger.debug("Force refresh token")
             iam_blueprint.session.get('/userinfo')
+
+        validate_configuration()
 
         return f(*args, **kwargs)
 
@@ -175,9 +105,9 @@ def authorized_with_valid_token(f):
 def show_settings():
 
     return render_template('settings.html',
-                           orchestrator_url=orchestratorUrl,
-                           iam_url=iam_base_url,
-                           im_url=imUrl,
+                           iam_url=settings.iamUrl,
+                           orchestrator_url=settings.orchestratorUrl,
+                           orchestrator_conf=settings.orchestratorConf,
                            vault_url=vault_url)
 
 
@@ -200,7 +130,7 @@ def show_deployments(subject):
 
         headers = {'Authorization': 'bearer %s' % access_token}
 
-        url = orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, issuer), 0,
+        url = settings.orchestratorUrl + "/deployments?createdBy={}&page={}&size={}".format('{}@{}'.format(subject, issuer), 0,
                                                                                    999999)
         response = requests.get(url, headers=headers)
 
@@ -405,7 +335,8 @@ def getslas():
 
     try:
         access_token = iam_blueprint.session.token['access_token']
-        slas = sla.get_slas(access_token)
+        slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cdb_url'])
+        print(slas)
 
     except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
@@ -552,7 +483,7 @@ def updatedeploymentsstatus(deployments, userid):
                     access_token = iam_blueprint.session.token['access_token']
                     headers = {'Authorization': 'bearer %s' % access_token}
 
-                    url = orchestratorUrl + "/deployments/" + uuid + "/template"
+                    url = settings.orchestratorUrl + "/deployments/" + uuid + "/template"
                     response = requests.get(url, headers=headers)
 
                     if not response.ok:
@@ -639,11 +570,19 @@ def home():
 
     if account_info.ok:
         account_info_json = account_info.json()
+
+        if settings.iamGroups:
+            user_groups = account_info_json['groups']
+            if not set(settings.iamGroups).issubset(user_groups):
+                app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
+                message = Markup('You need to be a member of the following IAM groups: {0}. <br> Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(json.dumps(settings.iamGroups), settings.iamUrl))
+                raise Forbidden(description=message)
+
         session['userid'] = account_info_json['sub']
         session['username'] = account_info_json['name']
         session['useremail'] = account_info_json['email']
         session['userrole'] = 'user'
-        session['gravatar'] = avatar(account_info_json['email'], 26)
+        session['gravatar'] = utils.avatar(account_info_json['email'], 26)
         session['organisation_name'] = account_info_json['organisation_name']
         access_token = iam_blueprint.session.token['access_token']
 
@@ -673,7 +612,7 @@ def home():
                 insert_values = (
                     account_info_json['sub'], account_info_json['name'], account_info_json['preferred_username'],
                     account_info_json['given_name'], account_info_json['family_name'], email,
-                    account_info_json['organisation_name'], avatar(email, 26), role, '1')
+                    account_info_json['organisation_name'], utils.avatar(email, 26), role, '1')
                 cursor.execute(insert_query, insert_values)
                 connection.commit()
             else:
@@ -699,7 +638,7 @@ def showdeployments():
 
     headers = {'Authorization': 'bearer %s' % access_token}
 
-    url = orchestratorUrl + "/deployments?createdBy=me&page={}&size={}".format(0, 999999)
+    url = settings.orchestratorUrl + "/deployments?createdBy=me&page={}&size={}".format(0, 999999)
     response = requests.get(url, headers=headers)
 
     deployments = {}
@@ -725,7 +664,7 @@ def deptemplate(depid=None):
     access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
 
-    url = orchestratorUrl + "/deployments/" + depid + "/template"
+    url = settings.orchestratorUrl + "/deployments/" + depid + "/template"
     response = requests.get(url, headers=headers)
 
     if not response.ok:
@@ -742,7 +681,7 @@ def depoutput(depid=None):
 
     access_token = iam_blueprint.session.token['access_token']
 
-    if not depid in session['deployments_uuid_array']:
+    if not session['userrole'].lower() == 'admin' and not depid in session['deployments_uuid_array']:
         flash("You are not allowed to browse this page!")
         return redirect(url_for('showdeployments'))
 
@@ -759,12 +698,10 @@ def depoutput(depid=None):
         # inp = json.dumps(dep['inputs'])
         inp = dep[
             'inputs']  # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
-        links = json.dumps(dep['links'])
         return render_template('depoutput.html',
                                deployment=dep,
                                inputs=inp,
-                               outputs=output,
-                               links=links)
+                               outputs=output)
 
 
 @app.route('/templatedb/<depid>')
@@ -788,7 +725,9 @@ def deplog(physicalId=None):
     access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % (access_token)}
 
-    url = imUrl + "/infrastructures/" + physicalId + "/contmsg"
+    app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf)) 
+
+    url = settings.orchestratorConf['im_url'] + "/infrastructures/" + physicalId + "/contmsg"
     response = requests.get(url, headers=headers)
 
     if not response.ok:
@@ -804,7 +743,7 @@ def depdel(depid=None):
 
     access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'bearer %s' % access_token}
-    url = orchestratorUrl + "/deployments/" + depid
+    url = settings.orchestratorUrl + "/deployments/" + depid
     response = requests.delete(url, headers=headers)
 
     if not response.ok:
@@ -820,8 +759,7 @@ def depdel(depid=None):
 
 def delete_secret_from_vault(access_token, secret_path):
 
-    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
-                             access_token, vault_secrets_path)
+    vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience, access_token, vault_secrets_path)
 
     auth_token = vault.get_auth_token()
 
@@ -838,7 +776,7 @@ def configure():
 
     selected_tosca = request.args['selected_tosca']
 
-    slas = sla.get_slas(access_token)
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cdb_url'])
 
     ssh_pub_key =  get_ssh_pub_key()
 
@@ -852,12 +790,19 @@ def configure():
 def add_sla_to_template(template, sla_id):
     # Add the placement policy
 
+    if version.parse(utils.getOrchestratorVersion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
+        toscaSlaPlacementType = "tosca.policies.indigo.SlaPlacement"
+    else:
+        toscaSlaPlacementType = "tosca.policies.Placement"
+
     template['topology_template']['policies'] = [
-        {"deploy_on_specific_site": {"type": "tosca.policies.Placement", "properties": {"sla_id": sla_id}}}]
+           {"deploy_on_specific_site": { "type": toscaSlaPlacementType, "properties": {"sla_id": sla_id}}}]
+
     app.logger.debug(yaml.dump(template, default_flow_style=False))
+
     return template
-
-
+#        
+# 
 @app.route('/submit', methods=['POST'])
 @authorized_with_valid_token
 def createdep():
@@ -867,8 +812,8 @@ def createdep():
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
-    with io.open(toscaDir + request.args.get('template')) as stream:
-        template = yaml.load(stream)
+    with io.open(settings.toscaDir + request.args.get('template')) as stream:
+        template = yaml.full_load(stream)
         # rewind file
         stream.seek(0)
         template_text = stream.read()
@@ -919,7 +864,7 @@ def createdep():
 
     # body= json.dumps(payload)
 
-    url = orchestratorUrl + "/deployments/"
+    url = settings.orchestratorUrl + "/deployments/"
     headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
     # response = requests.post(url, data=body, headers=headers)
     response = requests.post(url, json=payload, params=params, headers=headers)
