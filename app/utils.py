@@ -1,6 +1,8 @@
-import json, yaml, requests, os, io
+import json, yaml, requests, os, io, ast
 from fnmatch import fnmatch
 from hashlib import md5
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 def to_pretty_json(value):
     return json.dumps(value, sort_keys=True,
@@ -73,9 +75,6 @@ def extractToscaInfo(toscaDir, tosca_pars_dir, toscaTemplates):
                    for k,v in template['metadata'].items():
                        toscaInfo[tosca]["metadata"][k] = v
     
-                   if 'icon' not in template['metadata']:
-                       toscaInfo[tosca]["metadata"]['icon'] = "xxxx"
-    
                 if 'inputs' in template['topology_template']:
                    toscaInfo[tosca]['inputs'] = template['topology_template']['inputs']
     
@@ -98,3 +97,19 @@ def extractToscaInfo(toscaDir, tosca_pars_dir, toscaTemplates):
                                             toscaInfo[tosca]['tabs'] = pars_data["tabs"]
 
     return toscaInfo
+
+def exchange_token_with_audience(iam_url, client_id, client_secret, iam_token, audience):
+
+    payload_string = '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "'+audience+'", "subject_token": "'+iam_token+'", "scope": "openid profile" }'
+    
+    # Convert string payload to dictionary
+    payload =  ast.literal_eval(payload_string)
+    
+    iam_response = requests.post(iam_url + "/token", data=payload, auth=(client_id, client_secret), verify=False)
+    
+    if not iam_response.ok:
+        raise Exception("Error exchanging token: {} - {}".format(iam_response.status_code, iam_response.text) )
+    
+    deserialized_iam_response = json.loads(iam_response.text)
+    
+    return deserialized_iam_response['access_token']

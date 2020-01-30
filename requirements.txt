@@ -4,3 +4,4 @@ Flask==1.1.1
 requests==2.22.0
 PyYAML==5.1.2
 packaging==19.2
+hvac==0.9.6

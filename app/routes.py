@@ -1,4 +1,4 @@
-from app import app, iam_blueprint, sla as sla, settings, utils
+from app import app, iam_blueprint, sla as sla, settings, utils, vault
 from werkzeug.exceptions import Forbidden
 from flask import json, render_template, request, redirect, url_for, flash, session, Markup
 import requests, json
@@ -65,7 +65,7 @@ def getslas():
 
   try:
     access_token = iam_blueprint.session.token['access_token']
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cdb_url'])
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
 
   except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
@@ -179,7 +179,7 @@ def configure():
 
     selected_tosca = request.args['selected_tosca']
 
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cdb_url'])
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
 
     app.logger.debug("Template: " + json.dumps(toscaInfo[selected_tosca]))
 
@@ -192,7 +192,7 @@ def configure():
 def add_sla_to_template(template, sla_id):
     # Add the placement policy
 
-    if version.parse(utils.getOrchestratorVersion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
+    if version.parse(utils.getOrchestratorVersion(settings.orchestratorUrl).split('-')[0]) >= version.parse("2.2.0"):
         toscaSlaPlacementType = "tosca.policies.indigo.SlaPlacement"
     else:
         toscaSlaPlacementType = "tosca.policies.Placement"
@@ -227,23 +227,106 @@ def createdep():
       if form_data['extra_opts.schedtype'] == "man":
           template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
 
+      if 'extra_opts.providerTimeoutSet' in form_data:
+          params['providerTimeoutMins'] = form_data['extra_opts.providerTimeout']
+
       inputs = { k:v for (k,v) in form_data.items() if not k.startswith("extra_opts.") }
 
       app.logger.debug("Parameters: " + json.dumps(inputs))
 
       payload = { "template" : yaml.dump(template,default_flow_style=False, sort_keys=False), "parameters": inputs }
+      # set additional params
+      payload.update(params)
 
 
   url = settings.orchestratorUrl +  "/deployments/"
   headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % (access_token)}
-  response = requests.post(url, json=payload, params=params, headers=headers)
+  response = requests.post(url, json=payload, headers=headers)
 
   if not response.ok:
      flash("Error submitting deployment: \n" + response.text)
 
   return redirect(url_for('showdeployments'))
  
+@app.route('/manage_creds')
+@authorized_with_valid_token
+def manage_creds():
+  slas={}
 
+  try:
+    access_token = iam_blueprint.session.token['access_token']
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+
+  except Exception as e:
+        flash("Error retrieving SLAs list: \n" + str(e), 'warning')
+
+  return render_template('service_creds.html', slas=slas)
+
+
+
+@app.route('/read_secret_from_vault')
+@authorized_with_valid_token
+def read_secret_from_vault():
+    
+    serviceid = request.args.get('service_id',None)
+    servicetype = request.args.get('service_type',None)
+
+    access_token = iam_blueprint.session.token['access_token']
+    jwt_token=utils.exchange_token_with_audience(settings.iamUrl, app.config['IAM_CLIENT_ID'], app.config['IAM_CLIENT_SECRET'],access_token,settings.vault_audience)
+    vault_client = vault.VaultClient(settings.orchestratorConf['vault_url'],jwt_token,settings.vault_role)
+    path = "services_credential/" + serviceid
+    secret = vault_client.read_service_creds( path )
+
+    if secret:
+        secret = secret.get('data')
+
+    return render_template('modal_creds.html', mode="filled-form", service_creds=secret, service_type=servicetype)
+
+
+@app.route('/write_secret_to_vault', methods=['GET', 'POST'])
+@authorized_with_valid_token
+def write_secret_to_vault():
+
+    serviceid = request.args.get('service_id',"")
+    servicetype = request.args.get('service_type',"")
+
+    app.logger.debug("service_id={}".format(serviceid))
+
+    if request.method == 'GET':
+       return render_template('modal_creds.html', mode="empty-form", service_creds=None, service_type=servicetype, service_id=serviceid)
+    else:    
+
+       app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+
+       creds = request.form.to_dict()
+
+       access_token = iam_blueprint.session.token['access_token']
+   
+       jwt_token=utils.exchange_token_with_audience(settings.iamUrl, app.config['IAM_CLIENT_ID'], app.config['IAM_CLIENT_SECRET'],access_token,settings.vault_audience)
+       vault_client = vault.VaultClient(settings.orchestratorConf['vault_url'],jwt_token,settings.vault_role)
+       path = "services_credential/" + serviceid
+       secret = vault_client.write_service_creds( path, creds )
+
+       flash("Credentials successfully written!", 'info')
+
+       return redirect(url_for('manage_creds'))
+
+@app.route('/delete_secret_from_vault')
+@authorized_with_valid_token
+def delete_secret_from_vault():
+
+    serviceid = request.args.get('service_id',"")
+    servicetype = request.args.get('service_type',"")
+
+    access_token = iam_blueprint.session.token['access_token']
+
+    jwt_token=utils.exchange_token_with_audience(settings.iamUrl, app.config['IAM_CLIENT_ID'], app.config['IAM_CLIENT_SECRET'],access_token,settings.vault_audience)
+    vault_client = vault.VaultClient(settings.orchestratorConf['vault_url'],jwt_token,settings.vault_role)
+    path = "services_credential/" + serviceid
+
+    flash("Credentials successfully deleted!", 'info')
+    
+    return redirect(url_for('manage_creds'))
 
 @app.route('/logout')
 def logout():
