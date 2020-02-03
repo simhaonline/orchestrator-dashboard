@@ -11,7 +11,7 @@
           <div class="row">
             <div class="col-md-6">
               <!-- Title -->
-              <h4 class="font-weight-bold text-primary">Service Level Agreements</h4>
+              <h4 class="font-weight-bold text-primary">Resource Providers</h4>
             </div>
             <div class="col-md-6 text-right">
               <!-- Button -->
@@ -28,8 +28,7 @@
 	            <!-- <th>id</th>-->
                     <th>Site</th>
                     <th>Service Type</th>
-                    <th>Start date</th>
-                    <th>End date</th>
+                    <th>Service endpoint</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,8 +37,7 @@
 	            <!-- <td>{{sla.id}}</td>-->
 	            <td>{{sla.sitename}}</td>
 	            <td>{{sla.service_type}}</td>
-	            <td>{{sla.start_date}}</td>
-	            <td>{{sla.end_date}}</td>
+	            <td>{{sla.endpoint}}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -57,7 +55,7 @@
           "targets"  : 'no-sort',
           "orderable": false,
         }],
-        "order": [[ 3, "asc" ]]
+        "order": [[ 0, "asc" ]]
     });
 </script>
 

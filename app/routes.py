@@ -73,6 +73,14 @@ def getslas():
   return render_template('sla.html', slas=slas)
 
 
+def check_template_access(allowed_groups, user_groups):
+
+    #check intersection of user groups with user membership
+    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
+        return True
+    else:
+        return False
+
 @app.route('/')
 def home():
     if not iam_blueprint.session.authorized:
@@ -82,9 +90,9 @@ def home():
 
     if account_info.ok:
         account_info_json = account_info.json()
+        user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-            user_groups = account_info_json['groups']
             if not set(settings.iamGroups).issubset(user_groups):
                 app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
                 message = Markup('You need to be a member of the following IAM groups: {0}. <br> Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(json.dumps(settings.iamGroups), settings.iamUrl))
@@ -95,8 +103,9 @@ def home():
         session['organisation_name'] = account_info_json['organisation_name']
         access_token = iam_blueprint.token['access_token']
 
-        return render_template('portfolio.html', templates=toscaInfo)
-
+        templates = { k:v for (k,v) in toscaInfo.items() if check_template_access(v.get("metadata").get("allowed_groups"),user_groups) }
+        return render_template('portfolio.html', templates=templates)
+        
 
 @app.route('/deployments')
 @authorized_with_valid_token
