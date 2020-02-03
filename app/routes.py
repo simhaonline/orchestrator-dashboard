@@ -76,7 +76,7 @@ def getslas():
 def check_template_access(allowed_groups, user_groups):
 
     #check intersection of user groups with user membership
-    if (set(allowed_groups)&set(user_groups)) != set() or allowed_groups == ['*']:
+    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
         return True
     else:
         return False
