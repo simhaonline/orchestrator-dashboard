@@ -13,7 +13,8 @@ orchestratorConf = {
   'cmdb_url': app.config.get('CMDB_URL'),
   'slam_url': tempSlamUrl + "/rest/slam",
   'im_url': app.config.get('IM_URL'),
-  'vault_url': app.config.get('VAULT_URL')
+  'vault_url': app.config.get('VAULT_URL'),
+  'monitoring_url': app.config.get('MONITORING_URL')
 }
 
 external_links = app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else []
