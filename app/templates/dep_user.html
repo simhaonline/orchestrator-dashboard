@@ -75,10 +75,10 @@
         class="warning"
         {% endif %}
         >{{deployment.status}}</td>
-        <td>{{deployment.additionaldescription}}</td>
-        <td>{{deployment.creationTime}}</td>
-        <td>{{deployment.updateTime}}</td>
-        <td>{{deployment.cloudProviderName}}</td>
+        <td>{{deployment.description}}</td>
+        <td>{{deployment.creation_time}}</td>
+        <td>{{deployment.update_time}}</td>
+        <td>{{deployment.provider_name}}</td>
         <td>{{deployment.physicalId}}</td>
         <td>{{deployment.endpoint}}</td>
         <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>

@@ -6,6 +6,12 @@ def to_pretty_json(value):
     return json.dumps(value, sort_keys=True,
                       indent=4, separators=(',', ': '))
 
+def xstr(s):
+    return '' if s is None else str(s)
+
+def nnstr(s):
+    return '' if (s is None or s is '') else str(s)
+
 def avatar(email, size):
   digest = md5(email.lower().encode('utf-8')).hexdigest()
   return 'https://www.gravatar.com/avatar/{}?d=identicon&s={}'.format(digest, size)

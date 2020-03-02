@@ -1,29 +1,43 @@
 {
     "IAM_CLIENT_ID": "my_client_id",
     "IAM_CLIENT_SECRET": "my_client_secret",
+
     "IAM_BASE_URL": "https://iam-test.indigo-datacloud.eu",
     "ORCHESTRATOR_URL": "https://indigo-paas.cloud.ba.infn.it/orchestrator",
     "SLAM_URL": "https://indigo-slam.cloud.ba.infn.it:8443",
     "CMDB_URL": "https://indigo-paas.cloud.ba.infn.it/cmdb",
     "IM_URL": "https://indigo-paas.cloud.ba.infn.it/im",
-    "SUPPORT_EMAIL": "support@example.com",
+    "VAULT_URL": "https://my-vault-instance.com",
+    "CALLBACK_URL": "https://my-orchestrator-dashboard.com/callback",
+
     "ENABLE_ADVANCED_MENU": "no",
+
     "TOSCA_TEMPLATES_DIR": "/opt/tosca-templates",
     "TOSCA_PARAMETERS_DIR": "/opt/tosca-parameters",
     "TOSCA_METADATA_DIR": "/opt/tosca-metadata",
-    "CALLBACK_URL": "https://my-orchestrator-dashboard.com/callback",
-    "DB_HOST": "localhost",
-    "DB_USER": "my-user",
-    "DB_PASSWORD": "my-password",
-    "DB_NAME": "orchestrator_dashboard",
-    "DB_PORT": "3306",
+
+    "SQLALCHEMY_DATABASE_URI": "mysql+pymysql://oduser:oduser@localhost/orchestrator_dashboard_test",
+    "SQLALCHEMY_TRACK_MODIFICATIONS": "False",
+    "SQLALCHEMY_VERSION_HEAD": "88bc3c2c02a6",
+
     "MAIL_SERVER": "your.smtp.server.com",
     "MAIL_PORT": "25",
     "MAIL_SENDER": "test@orchestrator.com",
-    "ADMINS": "['admin@foo.it','other_admin@test.it']",
-    "VAULT_URL": "https://my-vault-instance.com",
     "SUPPORT_EMAIL": "support@example.com",
+
+    "ADMINS": "['admin@foo.it','other_admin@test.it']",
+
     "EXTERNAL_LINKS": [ { "url": "https://indigo-paas.cloud.ba.infn.it/status-page", "menu_item_name": "Services status" } ],
     "ENABLE_ADVANCED_MENU": "no",
-    "LOG_LEVEL": "info"
+    "LOG_LEVEL": "info",
+
+    "OVERALL_TIMEOUT": "3000",
+    "PROVIDER_TIMEOUT": "1000",
+
+    "SWIFT_AUTHVER": "3",
+    "SWIFT_AUTHURL": "https://cloud.recas.ba.infn:5000/v3",
+    "SWIFT_USER": "swiftuser",
+    "SWIFT_KEY": "swiftkey",
+    "SWIFT_TENANT": "swifttenant"
 }
+

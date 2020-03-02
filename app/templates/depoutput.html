@@ -9,11 +9,11 @@
   <div class="card shadow mb-4">
     <div class="card-header py-3">
       <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-10">
           <!-- Title -->
           <h4 class="font-weight-bold text-primary">{{ deployment.uuid }}</h4>
         </div>
-        <div class="col-md-6 text-right">
+        <div class="col-md-2 text-right">
           <!-- Button -->
           <button type=button class="btn btn-small btn-outline-secondary" onclick="history.back()"><span class="fas fa-arrow-left mr-2"></span> Back</button>
         </div>
@@ -22,7 +22,7 @@
 
     <div class="card-body">
 
-      <p><b>Description:</b> {{deployment.additionaldescription}} </p>
+      <p><b>Description:</b> {{deployment.description}} </p>
 
       <!-- start tabs creation section -->
       <ul class="nav nav-tabs">
@@ -36,16 +36,16 @@
         <div class="tab-pane fade show active" id=DeploymentStatus>
           <br>
           <p><b>STATUS</b> {{deployment.status}}</p>
-          {% if deployment.statusReason %}
-          <p><b>ERROR MSG</b> {{deployment.statusReason}}</p>
+          {% if deployment.status_reason %}
+          <p><b>ERROR MSG</b> {{deployment.status_reason}}</p>
           {% endif %}
-          <p><b>CREATED AT</b> {{deployment.creationTime}}</p>
-          <p><b>UPDATED AT</b> {{deployment.updateTime}}</p>
-          <p><b>DEPLOYED AT</b> {{deployment.cloudProviderName}}</p>
+          <p><b>CREATED AT</b> {{deployment.creation_time}}</p>
+          <p><b>UPDATED AT</b> {{deployment.update_time}}</p>
+          <p><b>DEPLOYED AT</b> {{deployment.provider_name}}</p>
           <p><b>ENDPOINT</b> {{deployment.endpoint}}</p>
 
           {% if deployment.status == 'CREATE_COMPLETE' %} <!-- Display these options only if the deployment is complete -->
-            {% if session['userid'] == deployment.createdBy['subject'] %} <!-- Show encryption info only if the deployment belong to user (thus avoiding admin) -->
+            {% if session['userid'] == deployment.sub %} <!-- Show encryption info only if the deployment belong to user (thus avoiding admin) -->
               <!-- Vault integration  if -->
               {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
               <hr/>

@@ -19,11 +19,8 @@ def get_sla_extra_info(access_token, service_id, cmdb_url):
 def get_slas(access_token, slam_url, cmdb_url):
 
     headers = {'Authorization': 'bearer %s' % (access_token)}
-
     url = slam_url + "/preferences/" + session['organisation_name']
-    
     response = requests.get(url, headers=headers, timeout=20, verify=False)
-
     response.raise_for_status()
     slas = response.json()['sla']
 
