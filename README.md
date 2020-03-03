@@ -166,7 +166,7 @@ If you are running the docker container, you need to ensure that the cert file i
 
 ```
 You must have a running instance of MySql
-You must have/create a user with full db administration right to auto create/manage the database
+You must have/create a user with full db administration rights to auto create/manage the database
 ```
 
 
