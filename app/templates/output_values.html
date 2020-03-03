@@ -1,0 +1,15 @@
+<br>
+{% for k,v in outputs.items() %}
+
+{% if "node_creds" in k %}
+<p><strong>{{k}}.ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></p>
+<p><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</p>
+
+{% elif "endpoint" in k %}
+<p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
+
+{% else %}
+<p><strong>{{k}}</strong>: {{v}}</p>
+{% endif %}
+
+{% endfor %}
