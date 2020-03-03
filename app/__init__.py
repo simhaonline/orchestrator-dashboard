@@ -63,12 +63,6 @@ if not isinstance(numeric_level, int):
 logging.basicConfig(level=numeric_level)
 
 
-if  app.config.get('LOGGING'):
-    if app.config.get('DEBUG'):
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO)
-
 #check if database exists
 engine = db.get_engine(app)
 if not database_exists(engine.url): # Checks for the first time

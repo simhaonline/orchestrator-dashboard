@@ -12,6 +12,9 @@ import yaml
 import io
 import linecache
 import sys
+import base64
+import struct
+import binascii
 from functools import wraps
 from packaging import version
 from dateutil import parser
@@ -30,8 +33,10 @@ if not issuer.endswith('/'):
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 
-toscaTemplates = utils.loadToscaTemplates(settings.toscaDir)
-toscaInfo = utils.extractToscaInfo(settings.toscaDir, settings.toscaParamsDir, toscaTemplates,
+toscaTemplates = utils.loadtoscatemplates(settings.toscaDir)
+toscaInfo = utils.extracttoscainfo(settings.toscaDir,
+                                   settings.toscaParamsDir,
+                                   toscaTemplates,
                                    settings.toscaMetadataDir)
 
 app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
@@ -70,7 +75,7 @@ def validate_configuration():
     if not settings.orchestratorConf.get('im_url'):
         app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
         access_token = iam_blueprint.session.token['access_token']
-        configuration = utils.getOrchestratorConfiguration(settings.orchestratorUrl, access_token)
+        configuration = utils.getorchestratorconfiguration(settings.orchestratorUrl, access_token)
         settings.orchestratorConf = configuration
 
 
@@ -110,7 +115,7 @@ def show_deployments(subject):
 
     user = get_user(subject)
 
-    if not user is None:
+    if user is not None:
         #
         # retrieve deployments from orchestrator
         access_token = iam_blueprint.session.token['access_token']
@@ -137,7 +142,7 @@ def show_deployments(subject):
         deployments = cvdeployments(Deployment.query.filter_by(sub=user.sub).all())
         for dep in deployments:
             newremote = dep.remote
-            if not dep.uuid in iids:
+            if dep.uuid not in iids:
                 if dep.remote == 1:
                     newremote = 0
             else:
@@ -243,14 +248,15 @@ def cvdeployment(d):
                             status=d.status,
                             status_reason=d.status_reason,
                             outputs=json.loads(d.outputs.replace("\n",
-                                                                 "\\n")) if not d.outputs is None and not d.outputs is '' else '',
+                                                                 "\\n")) if (d.outputs is not None
+                                                                            and d.outputs is not '') else '',
                             task=d.task,
                             links=json.loads(
-                                d.links.replace("\n", "\\n")) if not d.links is None and not d.links is '' else '',
+                                d.links.replace("\n", "\\n")) if (d.links is not None and d.links is not '') else '',
                             sub=d.sub,
                             template=d.template,
                             inputs=json.loads(
-                                d.inputs.replace("\n", "\\n")) if not d.inputs is None and not d.inputs is '' else '',
+                                d.inputs.replace("\n", "\\n")) if (d.inputs is not None and d.inputs is not '') else '',
                             params=d.params,
                             provider_name='' if d.provider_name is None else d.provider_name,
                             endpoint=d.endpoint,
@@ -268,7 +274,7 @@ def cvdeployment(d):
 def updatedeploymentsstatus(deployments, userid):
     deps = []
     iids = []
-    uuid = ''
+    # uuid = ''
 
     # update deployments status in database
     for dep_json in deployments:
@@ -287,15 +293,9 @@ def updatedeploymentsstatus(deployments, userid):
 
         dep = get_deployment(uuid)
 
-        if not dep is None:
-            pn = dep.provider_name
-            rs = dep.status_reason
-        else:
-            pn = ''
-            rs = ''
-
-        if not dep is None:
-            if dep.status != dep_json['status'] or pn != providername or rs != status_reason:
+        if dep is not None:
+            if dep.status != dep_json['status'] or dep.provider_name != providername \
+                    or dep.status_reason != status_reason:
                 dep.update_time = dep_json['updateTime']
                 dep.physicalId = vphid
                 dep.status = dep_json['status']
@@ -393,7 +393,8 @@ def home():
             if not set(settings.iamGroups).issubset(user_groups):
                 app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
                 message = Markup(
-                    'You need to be a member of the following IAM groups: {0}. <br> Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
+                    'You need to be a member of the following IAM groups: {0}. <br>' +
+                    'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
                         json.dumps(settings.iamGroups), settings.iamUrl))
                 raise Forbidden(description=message)
 
@@ -426,8 +427,8 @@ def home():
                         active=1)
             db.session.add(user)
             db.session.commit()
-        else:
-            session['userrole'] = user.role  # role
+
+        session['userrole'] = user.role  # role
 
         return render_template('portfolio.html', templates=toscaInfo)
 
@@ -479,7 +480,7 @@ def deptemplate(depid=None):
 @authorized_with_valid_token
 def lockdeployment(depid=None):
     dep = get_deployment(depid)
-    if not dep is None:
+    if dep is not None:
         dep.locked = 1
         db.session.add(dep)
         db.session.commit()
@@ -490,7 +491,7 @@ def lockdeployment(depid=None):
 @authorized_with_valid_token
 def unlockdeployment(depid=None):
     dep = get_deployment(depid)
-    if not dep is None:
+    if dep is not None:
         dep.locked = 0
         db.session.add(dep)
         db.session.commit()
@@ -500,9 +501,9 @@ def unlockdeployment(depid=None):
 @app.route('/output/<depid>')
 @authorized_with_valid_token
 def depoutput(depid=None):
-    access_token = iam_blueprint.session.token['access_token']
+    # access_token = iam_blueprint.session.token['access_token']
 
-    if not session['userrole'].lower() == 'admin' and not depid in session['deployments_uuid_array']:
+    if not session['userrole'].lower() == 'admin' and depid not in session['deployments_uuid_array']:
         flash("You are not allowed to browse this page!")
         return redirect(url_for('showdeployments'))
 
@@ -516,8 +517,10 @@ def depoutput(depid=None):
         if p != -1:
             p += 10
             output = output[:p] + '\n' + output[p:]
+        # we keep this as json, to retrieve info to enable passphrase recovery from vault
+        # only for those deployment has storage_encryption enabled
         # inp = json.dumps(dep['inputs'])
-        inp = dep.inputs  # we keep this as json, to retrieve info to enable passphrase recovery from vault only for those deployment has storage_encryption enabled
+        inp = dep.inputs
         return render_template('depoutput.html',
                                deployment=dep,
                                inputs=inp,
@@ -542,7 +545,7 @@ def deptemplatedb(depid):
 @authorized_with_valid_token
 def deplog(physicalId=None):
     access_token = iam_blueprint.session.token['access_token']
-    headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % (access_token)}
+    headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % access_token}
 
     app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
 
@@ -565,7 +568,7 @@ def depdel(depid=None):
         flash("Error deleting deployment: " + response.text)
     else:
         dep = get_deployment(depid)
-        if not dep is None and dep.storage_encryption == 1:
+        if dep is not None and dep.storage_encryption == 1:
             secret_path = session['userid'] + "/" + dep.vault_secret_uuid
             delete_secret_from_vault(access_token, secret_path)
 
@@ -605,13 +608,13 @@ def configure():
 def add_sla_to_template(template, sla_id):
     # Add the placement policy
 
-    if version.parse(utils.getOrchestratorVersion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
-        toscaSlaPlacementType = "tosca.policies.indigo.SlaPlacement"
+    if version.parse(utils.getorchestratoroersion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
+        tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
     else:
-        toscaSlaPlacementType = "tosca.policies.Placement"
+        tosca_sla_placement_type = "tosca.policies.Placement"
 
     template['topology_template']['policies'] = [
-        {"deploy_on_specific_site": {"type": toscaSlaPlacementType, "properties": {"sla_id": sla_id}}}]
+        {"deploy_on_specific_site": {"type": tosca_sla_placement_type, "properties": {"sla_id": sla_id}}}]
 
     app.logger.debug(yaml.dump(template, default_flow_style=False))
 
@@ -764,13 +767,13 @@ def callback():
 
     dep = get_deployment(uuid)
 
-    if not dep is None:
+    if dep is not None:
 
         st = dep.status
         ts = dep.task
         rf = dep.feedback_required
         rs = dep.status_reason
-        pn = dep.provider_name if not dep.provider_name is None else ''
+        pn = dep.provider_name if dep.provider_name is not None else ''
         if st != status or ts != task or pn != providername or status_reason != rs:
             deployment = get_deployment(uuid)
             vphid = payload['physicalId'] if 'physicalId' in payload else dep[
@@ -863,7 +866,7 @@ def get_ssh_pub_key():
 @app.route('/update_ssh_key/<subject>', methods=['POST'])
 @authorized_with_valid_token
 def update_ssh_key(subject):
-    access_token = iam_blueprint.session.token['access_token']
+    # access_token = iam_blueprint.session.token['access_token']
 
     sshkey = request.form['sshkey']
     if str(check_ssh_key(sshkey.encode())) != "0":
@@ -882,8 +885,7 @@ def update_ssh_key(subject):
 def check_ssh_key(key):
     # credits to: https://gist.github.com/piyushbansal/5243418
 
-    import base64, struct, sys, binascii
-    array = key.split();
+    array = key.split()
 
     # Each rsa-ssh key has 3 different strings in it, first one being
     # typeofkey second one being keystring third one being username .
@@ -896,7 +898,7 @@ def check_ssh_key(key):
 
     # must have only valid rsa-ssh key characters ie binascii characters
     try:
-        data = base64.decodestring(string)
+        data = base64.decodebytes(string)
     except binascii.Error:
         return 1
 
@@ -935,7 +937,7 @@ def create_ssh_key(subject):
     access_token = iam_blueprint.session.token['access_token']
     privkey, pubkey = generate_ssh_key()
     privkey = privkey.decode("utf-8").replace("\n", "\\n")
-    store_prikey_to_vault(access_token, privkey)
+    store_privkey_to_vault(access_token, privkey)
 
     # update database
     user = get_user(subject)
@@ -968,7 +970,7 @@ def generate_ssh_key():
     return private_key, public_key
 
 
-def store_prikey_to_vault(access_token, privkey_value):
+def store_privkey_to_vault(access_token, privkey_value):
     vault = VaultIntegration(vault_url, iam_base_url, iam_client_id, iam_client_secret, vault_bound_audience,
                              access_token, vault_secrets_path)
     auth_token = vault.get_auth_token()

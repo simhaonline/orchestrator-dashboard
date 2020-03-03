@@ -1,12 +1,9 @@
 import app
-import hashlib
-import os
-import sys
 
 from swiftclient import Connection
 
 
-def getSwiftConnection():
+def getswiftconnection():
     if app.app.config['SWIFT_AUTHVER'] == '3':
         os_options = {
             'project_name': app.app.config['SWIFT_TENANT'],
@@ -33,5 +30,3 @@ def getSwiftConnection():
             'auth_version? {!r}'.format(app.app.config['SWIFT_AUTHVER']))
 
     return connection
-
-
