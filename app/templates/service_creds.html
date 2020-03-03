@@ -31,7 +31,7 @@
             </thead>
             <tbody>
                 {% for sla in slas %}
-		{% if sla.iam_enabled != True %}
+		{% if sla.iam_enabled|lower != 'true' %}
                 <tr>
 	            <td>{{sla.sitename}}</td>
 	            <td>{{sla.endpoint}}</td>

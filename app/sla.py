@@ -12,6 +12,8 @@ def get_sla_extra_info(access_token, service_id, cmdb_url):
     sitename=response.json()['data']['sitename']
     endpoint=response.json()['data'].get('endpoint')
     iam_enabled=response.json()['data'].get('iam_enabled')
+    if iam_enabled == None:
+        iam_enabled = "True"
     if 'properties' in response.json()['data']:
         if 'gpu_support' in response.json()['data']['properties']:
             service_type = service_type + " (gpu_support: " + str(response.json()['data']['properties']['gpu_support']) + ")"
