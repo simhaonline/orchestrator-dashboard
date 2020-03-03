@@ -512,19 +512,11 @@ def depoutput(depid=None):
     if dep is None:
         return redirect(url_for('home'))
     else:
-        output = json.dumps(dep.outputs).lstrip().replace('\\n', '\n').replace('\\', '')
-        p = output.find('"token": "')
-        if p != -1:
-            p += 10
-            output = output[:p] + '\n' + output[p:]
-        # we keep this as json, to retrieve info to enable passphrase recovery from vault
-        # only for those deployment has storage_encryption enabled
-        # inp = json.dumps(dep['inputs'])
         inp = dep.inputs
         return render_template('depoutput.html',
                                deployment=dep,
-                               inputs=inp,
-                               outputs=output)
+                               inputs=json.loads(dep.inputs.strip('\"')),
+                               outputs=json.loads(dep.outputs.strip('\"')))
 
 
 @app.route('/templatedb/<depid>')
