@@ -97,6 +97,17 @@ def authorized_with_valid_token(f):
     return decorated_function
 
 
+def only_for_admin(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session['userrole'].lower() == 'admin':
+            return render_template('home.html')
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.route('/settings')
 @authorized_with_valid_token
 def show_settings():
@@ -109,9 +120,10 @@ def show_settings():
 
 @app.route('/deployments/<subject>')
 @authorized_with_valid_token
+@only_for_admin
 def show_deployments(subject):
-    if not session['userrole'].lower() == 'admin':
-        return render_template('home.html')
+    #  if not session['userrole'].lower() == 'admin':
+    #    return render_template('home.html')
 
     user = get_user(subject)
 
@@ -161,9 +173,10 @@ def show_deployments(subject):
 
 @app.route('/user/<subject>', methods=['GET', 'POST'])
 @authorized_with_valid_token
+@only_for_admin
 def show_user(subject):
-    if not session['userrole'].lower() == 'admin':
-        return render_template('home.html')
+    #  if not session['userrole'].lower() == 'admin':
+    #    return render_template('home.html')
 
     if request.method == 'POST':
 
@@ -201,9 +214,10 @@ def get_deployment(uuid):
 
 @app.route('/users')
 @authorized_with_valid_token
+@only_for_admin
 def show_users():
-    if not session['userrole'].lower() == 'admin':
-        return render_template('home.html')
+    # if not session['userrole'].lower() == 'admin':
+    #    return render_template('home.html')
 
     users = get_users()
 
@@ -249,7 +263,7 @@ def cvdeployment(d):
                             status_reason=d.status_reason,
                             outputs=json.loads(d.outputs.replace("\n",
                                                                  "\\n")) if (d.outputs is not None
-                                                                            and d.outputs is not '') else '',
+                                                                             and d.outputs is not '') else '',
                             task=d.task,
                             links=json.loads(
                                 d.links.replace("\n", "\\n")) if (d.links is not None and d.links is not '') else '',
@@ -267,7 +281,8 @@ def cvdeployment(d):
                             storage_encryption=d.storage_encryption,
                             vault_secret_uuid='' if d.vault_secret_uuid is None else d.vault_secret_uuid,
                             vault_secret_key='' if d.vault_secret_key is None else d.vault_secret_key,
-                            elastic=d.elastic)
+                            elastic=d.elastic,
+                            upgradable=d.upgradable)
     return deployment
 
 
@@ -346,7 +361,8 @@ def updatedeploymentsstatus(deployments, userid):
                                     storage_encryption=0,
                                     vault_secret_uuid='',
                                     vault_secret_key='',
-                                    elastic=0)
+                                    elastic=0,
+                                    upgradable=0)
 
             db.session.add(deployment)
             db.session.commit()
@@ -501,8 +517,6 @@ def unlockdeployment(depid=None):
 @app.route('/output/<depid>')
 @authorized_with_valid_token
 def depoutput(depid=None):
-    # access_token = iam_blueprint.session.token['access_token']
-
     if not session['userrole'].lower() == 'admin' and depid not in session['deployments_uuid_array']:
         flash("You are not allowed to browse this page!")
         return redirect(url_for('showdeployments'))
@@ -512,7 +526,6 @@ def depoutput(depid=None):
     if dep is None:
         return redirect(url_for('home'))
     else:
-        inp = dep.inputs
         return render_template('depoutput.html',
                                deployment=dep,
                                inputs=json.loads(dep.inputs.strip('\"')),
@@ -586,19 +599,36 @@ def configure():
 
     selected_tosca = request.args['selected_tosca']
 
+    template = toscaInfo[selected_tosca]
+    sla_id = utils.getslapolicy(template)
+
     slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
 
     ssh_pub_key = get_ssh_pub_key()
 
     return render_template('createdep.html',
-                           template=toscaInfo[selected_tosca],
+                           template=template,
                            selectedTemplate=selected_tosca,
                            ssh_pub_key=ssh_pub_key,
-                           slas=slas)
+                           slas=slas,
+                           sla_id=sla_id)
+
+
+def remove_sla_from_template(template):
+    if 'policies' in template['topology_template']:
+        for policy in template['topology_template']['policies']:
+            for (k, v) in policy.items():
+                if "type" in v \
+                        and (
+                        v['type'] == "tosca.policies.indigo.SlaPlacement" or v['type'] == "tosca.policies.Placement"):
+                    template['topology_template']['policies'].remove(policy)
+                    break
+        if len(template['topology_template']['policies']) == 0:
+            template['topology_template'].remove('policies')
 
 
 def add_sla_to_template(template, sla_id):
-    # Add the placement policy
+    # Add or replace the placement policy
 
     if version.parse(utils.getorchestratoroersion(settings.orchestratorUrl)) >= version.parse("2.2.0-SNAPSHOT"):
         tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
@@ -613,8 +643,6 @@ def add_sla_to_template(template, sla_id):
     return template
 
 
-#
-#
 @app.route('/submit', methods=['POST'])
 @authorized_with_valid_token
 def createdep():
@@ -632,13 +660,17 @@ def createdep():
         form_data = request.form.to_dict()
 
         params = {}
+
         kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
         feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
 
-        params['timeoutMins'] = '3'
+        params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
+        params['providerTimeoutMins'] = app.config['PROVIDER_TIMEOUT']
 
         if form_data['extra_opts.schedtype'].lower() == "man":
             template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
+        else:
+            remove_sla_from_template(template)
 
         additionaldescription = form_data['additional_description']
 
@@ -672,11 +704,11 @@ def createdep():
                    'providerTimeoutMins': app.config['PROVIDER_TIMEOUT'],
                    "callback": callback_url}
 
-    # body= json.dumps(payload)
+        elastic = utils.eleasticdeployment(template)
+        upgradable = utils.upgradabledeployment(template)
 
     url = settings.orchestratorUrl + "/deployments/"
     headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-    # response = requests.post(url, data=body, headers=headers)
     response = requests.post(url, json=payload, params=params, headers=headers)
 
     if not response.ok:
@@ -712,7 +744,8 @@ def createdep():
                                     storage_encryption=storage_encryption,
                                     vault_secret_uuid=vault_secret_uuid,
                                     vault_secret_key=vault_secret_key,
-                                    elastic=0)
+                                    elastic=elastic,
+                                    upgradable=upgradable)
             db.session.add(deployment)
             db.session.commit()
 
@@ -743,7 +776,6 @@ def logout():
 
 @app.route('/callback', methods=['POST'])
 def callback():
-    # data=request.data
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
 
@@ -761,25 +793,20 @@ def callback():
 
     if dep is not None:
 
-        st = dep.status
-        ts = dep.task
         rf = dep.feedback_required
-        rs = dep.status_reason
         pn = dep.provider_name if dep.provider_name is not None else ''
-        if st != status or ts != task or pn != providername or status_reason != rs:
-            deployment = get_deployment(uuid)
-            vphid = payload['physicalId'] if 'physicalId' in payload else dep[
-                'physicalId'] if 'physicalId' in dep else ''
-            endpoint = payload['outputs']['endpoint'] if 'endpoint' in payload['outputs'] else dep['endpoint']
-            deployment.update_time = payload['updateTime']
-            deployment.physicalId = vphid
-            deployment.status = status
-            deployment.outputs = json.dumps(payload['outputs'])
-            deployment.task = task
-            deployment.provider_name = providername
-            deployment.endpoint = endpoint
-            deployment.status_reason = status_reason
-            db.session.add(deployment)
+        if dep.status != status or dep.task != task or pn != providername or status_reason != dep.status_reason:
+            if 'endpoint' in payload['outputs']:
+                dep.endpoint = payload['outputs']['endpoint']
+            dep.update_time = payload['updateTime']
+            if 'physicalId' in payload:
+                dep.physicalId = payload['physicalId']
+            dep.status = status
+            dep.outputs = json.dumps(payload['outputs'])
+            dep.task = task
+            dep.provider_name = providername
+            dep.status_reason = status_reason
+            db.session.add(dep)
             db.session.commit()
     else:
         app.logger.info("Deployment with uuid:{} not found!".format(uuid))
@@ -996,26 +1023,28 @@ def read_privkey_from_vault(subject):
 
     return response_output
 
+
 @app.route('/get_monitoring_info')
 @authorized_with_valid_token
 def get_monitoring_info():
-
-    provider = request.args.get('provider',None)
-    serviceid = request.args.get('service_id',None)
-    servicetype = request.args.get('service_type',None)
+    provider = request.args.get('provider', None)
+    serviceid = request.args.get('service_id', None)
+    # servicetype = request.args.get('service_type',None)
 
     access_token = iam_blueprint.session.token['access_token']
 
-    headers = {'Authorization': 'bearer %s' % (access_token)}
-    url = settings.orchestratorConf['monitoring_url'] + "/monitoring/adapters/zabbix/zones/indigo/types/infrastructure/groups/" + provider + "/hosts/" + serviceid
+    headers = {'Authorization': 'bearer %s' % access_token}
+    url = settings.orchestratorConf[
+              'monitoring_url'] + "/monitoring/adapters/zabbix/zones/indigo/types/infrastructure/groups/" + \
+          provider + "/hosts/" + serviceid
     response = requests.get(url, headers=headers)
 
     monitoring_data = {}
 
     if response.ok:
         try:
-          monitoring_data = response.json()['result']['groups'][0]['paasMachines'][0]['services'][0]['paasMetrics']
+            monitoring_data = response.json()['result']['groups'][0]['paasMachines'][0]['services'][0]['paasMetrics']
         except Exception as e:
-          app.logger.debug("Error getting monitoring data")
+            app.logger.debug("Error getting monitoring data")
 
     return render_template('monitoring_metrics.html', monitoring_data=monitoring_data)

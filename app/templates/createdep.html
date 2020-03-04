@@ -19,7 +19,7 @@
                 </button>
               </div>
               <div class="modal-body">
-              <p>SSH keys allow you to establish a secure connection between your computer and the Galaxy virtual machine. At least one public key has to be provided mandatorily.</p>
+              <p>SSH keys allow you to establish a secure connection between your computer and the virtual machine. At least one public key has to be provided mandatorily.</p>
               <hr>
               <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("ssh_keys") }}">here</a></p>
               <p>You can still provide a key in the dedicated field of the form.</p>
@@ -105,14 +105,21 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
-  $("input[name='extra_opts.schedtype']").click(function() {
+
+   function hideSelectSla() {
     if ($("#mansched").is(":checked")){
        $('#manschedConf').show();
     }
     else {
-	$('#manschedConf').hide();
+	    $('#manschedConf').hide();
     }
+   }
+
+  $("input[name='extra_opts.schedtype']").click(function() {
+      hideSelectSla();
   });
+
+  hideSelectSla();
 });
 
 //$('#checkboxSLA').change(function() {

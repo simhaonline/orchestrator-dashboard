@@ -67,6 +67,8 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                 },
                 "enable_config_form": False,
                 "inputs": {},
+                "node_templates": {},
+                "policies": {},
                 "tabs": {}
             }
 
@@ -102,6 +104,12 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                 if 'inputs' in template['topology_template']:
                     tosca_info[tosca]['inputs'] = template['topology_template']['inputs']
 
+                if 'node_templates' in template['topology_template']:
+                    tosca_info[tosca]['node_templates'] = template['topology_template']['node_templates']
+
+                if 'policies' in template['topology_template']:
+                    tosca_info[tosca]['policies'] = template['topology_template']['policies']
+
                 # add parameters code here
                 # tabs = {}
                 if tosca_pars_dir:
@@ -121,3 +129,45 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                                             tosca_info[tosca]['tabs'] = pars_data["tabs"]
 
     return tosca_info
+
+
+def getslapolicy(template):
+    sla_id = ''
+    if 'policies' in template:
+        for policy in template['policies']:
+            if sla_id == '':
+                for (k, v) in policy.items():
+                    if "type" in v \
+                            and (v['type'] == "tosca.policies.indigo.SlaPlacement"
+                                 or v['type'] == "tosca.policies.Placement"):
+                        if 'properties' in v:
+                            sla_id = v['properties']['sla_id'] if 'sla_id' in v['properties'] \
+                                else ''
+                        break
+    return sla_id
+
+
+def eleasticdeployment(template):
+    elastic = False
+    if 'topology_template' in template:
+        if 'node_templates' in template['topology_template']:
+            for (j,u) in template['topology_template']['node_templates'].items():
+                if not elastic:
+                    for (k, v) in u.items():
+                        if k == "type" and v == "tosca.nodes.indigo.ElasticCluster":
+                            elastic = True
+                            break
+    return elastic
+
+
+def upgradabledeployment(template):
+    upgradable = False
+    if 'topology_template' in template:
+        if 'node_templates' in template['topology_template']:
+            for (j,u) in template['topology_template']['node_templates'].items():
+                if not upgradable:
+                    for (k, v) in u.items():
+                        if k == "type" and "tosca.nodes.indigo.LRMS.WorkerNode" in v:
+                            upgradable = True
+                            break
+    return upgradable
