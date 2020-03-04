@@ -1,7 +1,7 @@
 <br>
 {% for k,v in outputs.items() %}
 
-{% if "node_creds" in k %}
+{% if "node_creds" in k or "cluster_creds" in k %}
 <p><strong>{{k}}.ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></p>
 <p><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</p>
 
