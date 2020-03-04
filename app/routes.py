@@ -512,11 +512,19 @@ def depoutput(depid=None):
     if dep is None:
         return redirect(url_for('home'))
     else:
-        inp = dep.inputs
+        if dep.inputs:
+            inputs = json.loads(dep.inputs.strip('\"'))
+        else:
+            inputs = {}
+        if dep.outputs:
+            outputs = json.loads(dep.outputs.strip('\"'))
+        else:
+            outputs = {}
+
         return render_template('depoutput.html',
                                deployment=dep,
-                               inputs=json.loads(dep.inputs.strip('\"')),
-                               outputs=json.loads(dep.outputs.strip('\"')))
+                               inputs=inputs,
+                               outputs=outputs)
 
 
 @app.route('/templatedb/<depid>')
