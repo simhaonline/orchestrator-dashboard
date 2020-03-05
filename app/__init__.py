@@ -88,6 +88,7 @@ else:
         conn = engine.connect()
         result = conn.execute(ins)
 
+
 # update database, run flask_migrate.upgrade()
 with app.app_context():
     upgrade()
