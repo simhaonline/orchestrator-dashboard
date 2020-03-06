@@ -29,15 +29,19 @@ Create the `config.json` file (see the [example](app/config-sample.json)) settin
 | IAM_CLIENT_SECRET | IAM client Secret | Y | N/A
 | IAM_BASE_URL | IAM service URL | Y | N/A
 | IAM_GROUP_MEMBERSHIP | List of IAM groups to be checked for allowing access | N | []
-| ORCHESTRATOR_URL | PaaS Orchestrator Service URL | Y | N/A
 | TOSCA_TEMPLATES_DIR | Absolute path where the TOSCA templates are stored | Y | N/A
+| ORCHESTRATOR_URL | PaaS Orchestrator Service URL | Y | N/A
 | SLAM_URL | SLAM service URL | Y for Orchestrator version < 2.2.0 | N/A
 | CMDB_URL | CMDB service URL | Y for Orchestrator version < 2.2.0 | N/A
 | IM_URL | Infrastructure Manager service URL | Y for Orchestrator version < 2.2.0 | N/A
+| MONITORING_URL | Monitoring API endpoint URL |  Y for Orchestrator version < 2.2.0 | N/A
 | SUPPORT_EMAIL | Email address that will be shown in case of errors | N | ""
 | ENABLE_ADVANCED_MENU | Toggle to enable/disable the advanced menu <br>Valid values: yes, no | N | no
-| EXTERNAL_LINKS | List of dictionaries ({ "url": "example.com" , "menu_item_name": "Example link"}) specifying links that will be shown under the "External Links" menu | N | []
 | LOG_LEVEL | Set Logging level | N | info
+| EXTERNAL_LINKS | List of dictionaries ({ "url": "example.com" , "menu_item_name": "Example link"}) specifying links that will be shown under the "External Links" menu | N | []
+| VAULT_URL | Vault URL | N | ""
+| VAULT_ROLE | JWT role used for Vault authentication | N | ""  
+| VAULT_OIDC_AUDIENCE | JWT audience needed for Vault authentication | N | ""
 
 Clone the tosca-templates repository to get a set of tosca templates that the dashboard will load, e.g.:
 ````
