@@ -61,13 +61,15 @@ The Orchestrator dashboard can exploit some optional information provided in the
 
 In particular, the following tags are supported:
 
-| Tag name  | Description 
-| -------------- | ------------- |
-| description | Used for showing the card description  |               |
-| metadata.display_name | Used for the card title. If not pro  |               |
-| metadata.icon . |  Used for showing the card image. If no image URL is provided, the dashboard will load this [icon](https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png). |
-| metadata.display_name | Used for the card title. If not provided, the template name will be used   |               |
-| metadata.tag | Used for the card ribbon (displayed on the right bottom corner)   |               |
+| Tag name  | Description        | Type               |
+| -------------- | ------------- | ------------------ |              
+| description | Used for showing the card description  |  String |
+| metadata.display_name | Used for the card title. If not pro  |    String |
+| metadata.icon  |  Used for showing the card image. If no image URL is provided, the dashboard will load this [icon](https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png). | String |
+| metadata.display_name | Used for the card title. If not provided, the template name will be used   | String |
+| metadata.tag  | Used for the card ribbon (displayed on the right bottom corner)   |     String |
+| metadata.allowed_groups | Used for showing the template only to members of specific groups |  String <br> - "*" == any group can see the template <br> - "group1,group2" == only members of _group1_ and _group2_ can see the template |
+
 
 Example of template metadata:
 
