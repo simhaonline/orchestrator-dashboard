@@ -100,9 +100,11 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                                                 and metadata_template['metadata'] is not None:
                                             for k, v in metadata_template['metadata'].items():
                                                 tosca_info[tosca]["metadata"][k] = v
-
+                # initialize inputs
+                tosca_inputs = {}
+                # get inputs from template, if provided
                 if 'inputs' in template['topology_template']:
-                    tosca_info[tosca]['inputs'] = template['topology_template']['inputs']
+                    tosca_inputs = template['topology_template']['inputs']
 
                 if 'node_templates' in template['topology_template']:
                     tosca_info[tosca]['node_templates'] = template['topology_template']['node_templates']
@@ -111,7 +113,6 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                     tosca_info[tosca]['policies'] = template['topology_template']['policies']
 
                 # add parameters code here
-                # tabs = {}
                 if tosca_pars_dir:
                     tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
                     for fpath, subs, fnames in os.walk(tosca_pars_path):
@@ -124,7 +125,8 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                                     with io.open(tosca_pars_file) as pars_file:
                                         tosca_info[tosca]['enable_config_form'] = True
                                         pars_data = yaml.full_load(pars_file)
-                                        tosca_info[tosca]['inputs'] = pars_data["inputs"]
+                                        pars_inputs = pars_data["inputs"]
+                                        tosca_info[tosca]['inputs'] = {**tosca_inputs, **pars_inputs}
                                         if "tabs" in pars_data:
                                             tosca_info[tosca]['tabs'] = pars_data["tabs"]
 
