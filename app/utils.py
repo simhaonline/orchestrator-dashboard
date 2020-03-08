@@ -105,9 +105,10 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                 # get inputs from template, if provided
                 if 'inputs' in template['topology_template']:
                     tosca_inputs = template['topology_template']['inputs']
+                    tosca_info[tosca]['inputs'] = tosca_inputs
 
                 if 'node_templates' in template['topology_template']:
-                    tosca_info[tosca]['node_templates'] = template['topology_template']['node_templates']
+                    tosca_info[tosca]['deployment_type'] = getdeploymenttype(template['topology_template']['node_templates'])
 
                 if 'policies' in template['topology_template']:
                     tosca_info[tosca]['policies'] = template['topology_template']['policies']
@@ -131,6 +132,26 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                                             tosca_info[tosca]['tabs'] = pars_data["tabs"]
 
     return tosca_info
+
+
+def getdeploymenttype(nodes):
+    deployment_type = ""
+    for (j, u) in nodes.items():
+        if deployment_type == "":
+            for (k, v) in u.items():
+                if k == "type" and v == "tosca.nodes.indigo.Compute":
+                    deployment_type = "CLOUD"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Marathon":
+                    deployment_type = "MARATHON"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Chronos":
+                    deployment_type = "CHRONOS"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Qcg.Job":
+                    deployment_type = "QCG"
+                    break
+    return deployment_type
 
 
 def getslapolicy(template):
