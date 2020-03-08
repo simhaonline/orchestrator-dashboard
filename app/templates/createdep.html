@@ -118,9 +118,19 @@ $(document).ready(function () {
   hideSelectSla();
 });
 
-//$('#checkboxSLA').change(function() {
-//    $('#selectSLA').attr('disabled',!this.checked)
-//});
+$(document).ready(function () {
+  $("input[name='extra_opts.providerTimeoutSet']").click(function() {
+    if ($("#providerTimeoutSet").is(":checked")){
+       $('#providerTimeout').prop("disabled",false);
+       $('#providerTimeout').prop("value", 5);
+    }
+    else {
+        $('#providerTimeout').prop("disabled",true);
+        $('#providerTimeout').prop("value", "");
+    }
+  });
+});
+
 </script>
 
 {% if ssh_pub_key is none  %}
