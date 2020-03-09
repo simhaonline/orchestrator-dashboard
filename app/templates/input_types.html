@@ -1,5 +1,5 @@
 <div class="form-group">
-  {% if value.tag_type is not defined or value.tag_type != "hidden" %}
+  {% if value.type is not defined or value.type != "hidden" %}
   <label for="{{key}}">
     {% if value.display_name is defined %}
     {{value.display_name}}
@@ -8,31 +8,31 @@
     {% endif %}
   </label>
   {% endif %}
-  {% if value.tag_type is defined %}
+  {% if value.type is defined %}
 
     <!-- text type -->
-    {% if value.tag_type == "text" %}
+    {% if value.type == "text" %}
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" placeholder="{{value.placeholder}}" {% if value.required %}required{%endif%} />
     <!-- end select type -->
 
     <!-- hidden text type -->
-    {% elif value.tag_type == "hidden" %}
+    {% elif value.type == "hidden" %}
       <input type="hidden" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" >
     <!-- end hidden text type -->
 
     <!-- email type -->
-    {% elif value.tag_type == "email" %}
+    {% elif value.type == "email" %}
       <input type="email" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your email" {% if value.required %}required{%endif%} >
     <!-- end email type -->
 
     <!-- password type -->
-    {% elif value.tag_type == "password" %}
+    {% elif value.type == "password" %}
       <input type="password" class="form-control" id="{{key}}" name="{{key}}" placeholder="Enter your password" {% if value.required %}required{%endif%} >
     <!-- end password type -->
 
     <!-- select type -->
     <!-- https://github.com/select2/select2/issues/4220 -->
-    {% elif value.tag_type == "select" %}
+    {% elif value.type == "select" %}
       <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}">
       {% for constraint in value.constraints %}
         <option value="{{constraint['value']}}">{{constraint['label']}}</option>
@@ -41,7 +41,7 @@
     <!-- end select type -->
 
     <!-- radio type -->
-    {% elif value.tag_type == "radio" %}
+    {% elif value.type == "radio" %}
       {% for constraint in value.constraints %}
         {% if loop.first %}
           <br><input type="radio" id="{{key}}" name="{{key}}" value={{constraint['value']}} checked> {{constraint['label']}}<br>
@@ -52,7 +52,7 @@
     <!-- end radio type -->
 
     <!-- toggle type -->
-    {% elif value.tag_type == "toggle" %}
+    {% elif value.type == "toggle" %}
       {% for constraint in value.constraints %}
       <div>
         <input type="checkbox" data-toggle="toggle" id="{{key}}" name="{{key}}" data-size="sm" data-offstyle="dark" value={{constraint['value']}}>
@@ -61,14 +61,13 @@
     <!-- end toggle type -->
 
     <!-- ssh special input field -->
-    {% elif value.tag_type == "ssh_pub_key_type" %}
+    {% elif value.type == "ssh_pub_key_type" %}
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} />
     <!-- end select type -->
 
-    {% endif %} <!-- end tag type if -->
-
-  {% else %}
-    <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} />
-  {% endif %}  <!-- end tag type existence if -->
-  <span id="help{{key}}" class="help-block">{{value.description}}</span>
+    {% else %}
+      <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} />
+    {% endif %}  <!-- end tag type existence if -->
+  <span id="help{{key}}" class="text-muted">{{value.description}}</span>
+  {% endif %}
 </div>

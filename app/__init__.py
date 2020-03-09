@@ -60,7 +60,7 @@ if not isinstance(numeric_level, int):
 logging.basicConfig(level=numeric_level)
 
 from app import models
-from app import routes
+from app import routes, errors
 
 # check if database exists
 engine = db.get_engine(app)

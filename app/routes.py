@@ -238,7 +238,7 @@ def getslas():
     try:
         access_token = iam_blueprint.session.token['access_token']
         slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
-        print(slas)
+        app.logger.debug("SLAs: {}".format(slas))
 
     except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
@@ -526,14 +526,9 @@ def depoutput(depid=None):
     if dep is None:
         return redirect(url_for('home'))
     else:
-        if dep.inputs:
-            inputs = json.loads(dep.inputs.strip('\"'))
-        else:
-            inputs = {}
-        if dep.outputs:
-            outputs = json.loads(dep.outputs.strip('\"'))
-        else:
-            outputs = {}
+
+        inputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+        outputs = json.loads(dep.outputs.strip('\"')) if dep.outputs else {}
 
         return render_template('depoutput.html',
                                deployment=dep,
@@ -611,7 +606,7 @@ def configure():
     template = toscaInfo[selected_tosca]
     sla_id = utils.getslapolicy(template)
 
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'], template["deployment_type"])
 
     ssh_pub_key = get_ssh_pub_key()
 
@@ -670,16 +665,22 @@ def createdep():
 
         params = {}
 
-        kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
-        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
+        params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
+
+        if 'extra_opts.providerTimeoutSet' in form_data:
+            params['providerTimeoutMins'] = form_data['extra_opts.providerTimeout']
 
         params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-        params['providerTimeoutMins'] = app.config['PROVIDER_TIMEOUT']
 
         if form_data['extra_opts.schedtype'].lower() == "man":
             template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
         else:
             remove_sla_from_template(template)
+
+        feedback_required = 0
+        if 'extra_opts.sendEmailFeedback' in form_data:
+            feedback_required = 1
+            params['callback'] = callback_url
 
         additionaldescription = form_data['additional_description']
 
@@ -707,11 +708,8 @@ def createdep():
         app.logger.debug("Parameters: " + json.dumps(inputs))
 
         payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
-                   "parameters": inputs,
-                   'keepLastAttempt': kla,
-                   'timeoutMins': app.config['OVERALL_TIMEOUT'],
-                   'providerTimeoutMins': app.config['PROVIDER_TIMEOUT'],
-                   "callback": callback_url}
+                   "parameters": inputs}\
+                   .update(params)
 
         elastic = utils.eleasticdeployment(template)
         upgradable = utils.upgradabledeployment(template)
