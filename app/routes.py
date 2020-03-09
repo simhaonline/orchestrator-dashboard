@@ -188,7 +188,7 @@ def configure():
 
     selected_tosca = request.args['selected_tosca']
 
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'], toscaInfo[selected_tosca]["deployment_type"])
 
     app.logger.debug("Template: " + json.dumps(toscaInfo[selected_tosca]))
 
