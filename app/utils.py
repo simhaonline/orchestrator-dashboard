@@ -41,6 +41,26 @@ def getorchestratorconfiguration(orchestrator_url, access_token):
     return configuration
 
 
+def getdeploymenttype(nodes):
+    deployment_type = ""
+    for (j, u) in nodes.items():
+        if deployment_type == "":
+            for (k, v) in u.items():
+                if k == "type" and v == "tosca.nodes.indigo.Compute":
+                    deployment_type = "CLOUD"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Marathon":
+                    deployment_type = "MARATHON"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Chronos":
+                    deployment_type = "CHRONOS"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Qcg.Job":
+                    deployment_type = "QCG"
+                    break
+    return deployment_type
+
+
 def loadtoscatemplates(directory):
     toscatemplates = []
     for path, subdirs, files in os.walk(directory):
@@ -53,80 +73,89 @@ def loadtoscatemplates(directory):
     return toscatemplates
 
 
-def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_dir):
+def extractalltoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_dir):
     tosca_info = {}
     for tosca in tosca_templates:
         with io.open(tosca_dir + tosca) as stream:
             template = yaml.full_load(stream)
+            tosca_info[tosca] = extracttoscainfo(template, tosca, tosca_pars_dir, tosca_metadata_dir)
+    return tosca_info
 
-            tosca_info[tosca] = {
-                "valid": True,
-                "description": "TOSCA Template",
-                "metadata": {
-                    "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
-                },
-                "enable_config_form": False,
-                "inputs": {},
-                "node_templates": {},
-                "policies": {},
-                "tabs": {}
-            }
 
-            if 'topology_template' not in template:
-                tosca_info[tosca]["valid"] = False
+def extracttoscainfo(template, tosca, tosca_pars_dir, tosca_metadata_dir):
 
-            else:
+    tosca_info = {
+        "valid": True,
+        "description": "TOSCA Template",
+        "metadata": {
+            "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
+        },
+        "enable_config_form": False,
+        "inputs": {},
+        "node_templates": {},
+        "policies": {},
+        "tabs": {}
+    }
 
-                if 'description' in template:
-                    tosca_info[tosca]["description"] = template['description']
+    if 'topology_template' not in template:
+        tosca_info["valid"] = False
 
-                if 'metadata' in template and template['metadata'] is not None:
-                    for k, v in template['metadata'].items():
-                        tosca_info[tosca]["metadata"][k] = v
+    else:
 
-                if tosca_metadata_dir:
-                    tosca_metadata_path = tosca_metadata_dir + "/"
-                    for mpath, msubs, mnames in os.walk(tosca_metadata_path):
-                        for mname in mnames:
-                            if fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
-                                    fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
-                                # skip hidden files
-                                if mname[0] != '.':
-                                    tosca_metadata_file = os.path.join(mpath, mname)
-                                    with io.open(tosca_metadata_file) as metadata_file:
-                                        metadata_template = yaml.full_load(metadata_file)
+        if 'description' in template:
+            tosca_info["description"] = template['description']
 
-                                        if 'metadata' in metadata_template \
-                                                and metadata_template['metadata'] is not None:
-                                            for k, v in metadata_template['metadata'].items():
-                                                tosca_info[tosca]["metadata"][k] = v
+        if 'metadata' in template and template['metadata'] is not None:
+            for k, v in template['metadata'].items():
+                tosca_info["metadata"][k] = v
 
-                if 'inputs' in template['topology_template']:
-                    tosca_info[tosca]['inputs'] = template['topology_template']['inputs']
+        if tosca and tosca_metadata_dir:
+            tosca_metadata_path = tosca_metadata_dir + "/"
+            for mpath, msubs, mnames in os.walk(tosca_metadata_path):
+                for mname in mnames:
+                    if fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yml') or \
+                            fnmatch(mname, os.path.splitext(tosca)[0] + '.metadata.yaml'):
+                        # skip hidden files
+                        if mname[0] != '.':
+                            tosca_metadata_file = os.path.join(mpath, mname)
+                            with io.open(tosca_metadata_file) as metadata_file:
+                                metadata_template = yaml.full_load(metadata_file)
 
-                if 'node_templates' in template['topology_template']:
-                    tosca_info[tosca]['node_templates'] = template['topology_template']['node_templates']
+                                if 'metadata' in metadata_template \
+                                        and metadata_template['metadata'] is not None:
+                                    for k, v in metadata_template['metadata'].items():
+                                        tosca_info["metadata"][k] = v
 
-                if 'policies' in template['topology_template']:
-                    tosca_info[tosca]['policies'] = template['topology_template']['policies']
+        # initialize inputs
+        tosca_inputs = {}
+        # get inputs from template, if provided
+        if 'inputs' in template['topology_template']:
+            tosca_inputs = template['topology_template']['inputs']
+            tosca_info['inputs'] = tosca_inputs
 
-                # add parameters code here
-                # tabs = {}
-                if tosca_pars_dir:
-                    tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
-                    for fpath, subs, fnames in os.walk(tosca_pars_path):
-                        for fname in fnames:
-                            if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
-                                    fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
-                                # skip hidden files
-                                if fname[0] != '.':
-                                    tosca_pars_file = os.path.join(fpath, fname)
-                                    with io.open(tosca_pars_file) as pars_file:
-                                        tosca_info[tosca]['enable_config_form'] = True
-                                        pars_data = yaml.full_load(pars_file)
-                                        tosca_info[tosca]['inputs'] = pars_data["inputs"]
-                                        if "tabs" in pars_data:
-                                            tosca_info[tosca]['tabs'] = pars_data["tabs"]
+        if 'node_templates' in template['topology_template']:
+            tosca_info['deployment_type'] = getdeploymenttype(template['topology_template']['node_templates'])
+
+        if 'policies' in template['topology_template']:
+            tosca_info['policies'] = template['topology_template']['policies']
+
+        # add parameters code here
+        if tosca and tosca_pars_dir:
+            tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
+            for fpath, subs, fnames in os.walk(tosca_pars_path):
+                for fname in fnames:
+                    if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
+                            fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
+                        # skip hidden files
+                        if fname[0] != '.':
+                            tosca_pars_file = os.path.join(fpath, fname)
+                            with io.open(tosca_pars_file) as pars_file:
+                                tosca_info['enable_config_form'] = True
+                                pars_data = yaml.full_load(pars_file)
+                                pars_inputs = pars_data["inputs"]
+                                tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
+                                if "tabs" in pars_data:
+                                    tosca_info['tabs'] = pars_data["tabs"]
 
     return tosca_info
 
@@ -138,8 +167,8 @@ def getslapolicy(template):
             if sla_id == '':
                 for (k, v) in policy.items():
                     if "type" in v \
-                            and (v['type'] == "tosca.policies.indigo.SlaPlacement"
-                                 or v['type'] == "tosca.policies.Placement"):
+                            and (v['type'] == 'tosca.policies.indigo.SlaPlacement'
+                                 or v['type'] == 'tosca.policies.Placement'):
                         if 'properties' in v:
                             sla_id = v['properties']['sla_id'] if 'sla_id' in v['properties'] \
                                 else ''
@@ -148,26 +177,22 @@ def getslapolicy(template):
 
 
 def eleasticdeployment(template):
-    elastic = False
+    return hasnodeoftype(template, 'tosca.nodes.indigo.ElasticCluster')
+
+
+def updatabledeployment(template):
+    return hasnodeoftype(template, 'tosca.nodes.indigo.LRMS.WorkerNode')
+
+
+def hasnodeoftype(template, type):
+    found = False
     if 'topology_template' in template:
         if 'node_templates' in template['topology_template']:
             for (j,u) in template['topology_template']['node_templates'].items():
-                if not elastic:
-                    for (k, v) in u.items():
-                        if k == "type" and v == "tosca.nodes.indigo.ElasticCluster":
-                            elastic = True
-                            break
-    return elastic
-
-
-def upgradabledeployment(template):
-    upgradable = False
-    if 'topology_template' in template:
-        if 'node_templates' in template['topology_template']:
-            for (j,u) in template['topology_template']['node_templates'].items():
-                if not upgradable:
-                    for (k, v) in u.items():
-                        if k == "type" and "tosca.nodes.indigo.LRMS.WorkerNode" in v:
-                            upgradable = True
-                            break
-    return upgradable
+                if found:
+                    break
+                for (k, v) in u.items():
+                    if k == 'type' and type in v:
+                        found = True
+                        break
+    return found

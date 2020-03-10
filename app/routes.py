@@ -34,10 +34,10 @@ if not issuer.endswith('/'):
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 
 toscaTemplates = utils.loadtoscatemplates(settings.toscaDir)
-toscaInfo = utils.extracttoscainfo(settings.toscaDir,
-                                   settings.toscaParamsDir,
-                                   toscaTemplates,
-                                   settings.toscaMetadataDir)
+toscaInfo = utils.extractalltoscainfo(settings.toscaDir,
+                                      settings.toscaParamsDir,
+                                      toscaTemplates,
+                                      settings.toscaMetadataDir)
 
 app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
@@ -238,7 +238,7 @@ def getslas():
     try:
         access_token = iam_blueprint.session.token['access_token']
         slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
-        print(slas)
+        app.logger.debug("SLAs: {}".format(slas))
 
     except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
@@ -278,11 +278,12 @@ def cvdeployment(d):
                             locked=d.locked,
                             issuer=d.issuer,
                             feedback_required=d.feedback_required,
+                            keep_last_attempt=d.keep_last_attempt,
                             storage_encryption=d.storage_encryption,
                             vault_secret_uuid='' if d.vault_secret_uuid is None else d.vault_secret_uuid,
                             vault_secret_key='' if d.vault_secret_key is None else d.vault_secret_key,
                             elastic=d.elastic,
-                            upgradable=d.upgradable)
+                            updatable=d.updatable)
     return deployment
 
 
@@ -357,12 +358,14 @@ def updatedeploymentsstatus(deployments, userid):
                                     endpoint=endpoint,
                                     remote=1,
                                     locked=0,
+                                    feedback_required=0,
+                                    keep_last_attempt=0,
                                     issuer=dep_json['createdBy']['issuer'],
                                     storage_encryption=0,
                                     vault_secret_uuid='',
                                     vault_secret_key='',
                                     elastic=0,
-                                    upgradable=0)
+                                    updatable=0)
 
             db.session.add(deployment)
             db.session.commit()
@@ -526,14 +529,8 @@ def depoutput(depid=None):
     if dep is None:
         return redirect(url_for('home'))
     else:
-        if dep.inputs:
-            inputs = json.loads(dep.inputs.strip('\"'))
-        else:
-            inputs = {}
-        if dep.outputs:
-            outputs = json.loads(dep.outputs.strip('\"'))
-        else:
-            outputs = {}
+        inputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+        outputs = json.loads(dep.outputs.strip('\"')) if dep.outputs else {}
 
         return render_template('depoutput.html',
                                deployment=dep,
@@ -601,6 +598,99 @@ def delete_secret_from_vault(access_token, secret_path):
     vault.delete_secret(delete_token, secret_path)
 
 
+@app.route('/depupdate/<depid>')
+@authorized_with_valid_token
+def depupdate(depid=None):
+    if depid is not None:
+        dep = get_deployment(depid)
+        if dep is not None:
+            access_token = iam_blueprint.session.token['access_token']
+            template = dep.template
+            tosca_info = utils.extracttoscainfo(yaml.full_load(io.StringIO(template)), None, None, None)
+            sla_id = utils.getslapolicy(tosca_info)
+            slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+            ssh_pub_key = get_ssh_pub_key()
+
+            return render_template('depupdate.html',
+                                   template=template,
+                                   template_description=tosca_info['description'],
+                                   instance_description=dep.description,
+                                   feedback_required=dep.feedback_required,
+                                   keep_last_attempt=dep.keep_last_attempt,
+                                   provider_timeout=app.config['PROVIDER_TIMEOUT'],
+                                   selectedTemplate=tosca_info,
+                                   ssh_pub_key=ssh_pub_key,
+                                   slas=slas,
+                                   sla_id=sla_id,
+                                   depid=depid)
+
+    return redirect(url_for('showdeployments'))
+
+
+@app.route('/updatedep', methods=['POST'])
+@authorized_with_valid_token
+def updatedep():
+
+    access_token = iam_blueprint.session.token['access_token']
+    callback_url = app.config['CALLBACK_URL']
+
+    form_data = request.form.to_dict()
+
+    app.logger.debug("Form data: " + json.dumps(form_data))
+
+    template_text = form_data['template']
+    template = yaml.full_load(io.StringIO(template_text))
+
+    depid = form_data['depid']
+    dep = get_deployment(depid)
+
+    params = {}
+
+    kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else dep.keep_last_attempt
+    feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
+    params['providerTimeoutMins'] = form_data[
+        'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+        'PROVIDER_TIMEOUT']
+    params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
+    params['callback'] = app.config['CALLBACK_URL']
+
+
+    if form_data['extra_opts.schedtype'].lower() == "man":
+        template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
+    else:
+        remove_sla_from_template(template)
+
+    additionaldescription = form_data['additional_description']
+
+    inputs = json.loads(dep.inputs)
+
+    if additionaldescription is not None:
+        inputs['additional_description'] = additionaldescription
+
+    app.logger.debug("Parameters: " + json.dumps(inputs))
+
+    payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
+               "parameters": inputs}
+    payload.update(params)
+
+    url = settings.orchestratorUrl + "/deployments/" + depid
+    headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
+    response = requests.put(url, json=payload, params=params, headers=headers)
+
+    if not response.ok:
+        flash("Error updating deployment: \n" + response.text)
+    else:
+        # store data into database
+        dep.keep_last_attempt = kla
+        dep.feedback_required = feedback_required
+        dep.description = additionaldescription
+        dep.template = template_text
+        db.session.add(dep)
+        db.session.commit()
+
+    return redirect(url_for('showdeployments'))
+
+
 @app.route('/configure')
 @authorized_with_valid_token
 def configure():
@@ -611,12 +701,16 @@ def configure():
     template = toscaInfo[selected_tosca]
     sla_id = utils.getslapolicy(template)
 
-    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+    slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'],
+                        template["deployment_type"])
 
     ssh_pub_key = get_ssh_pub_key()
 
     return render_template('createdep.html',
                            template=template,
+                           feedback_required=True,
+                           keep_last_attempt=False,
+                           provider_timeout=app.config['PROVIDER_TIMEOUT'],
                            selectedTemplate=selected_tosca,
                            ssh_pub_key=ssh_pub_key,
                            slas=slas,
@@ -656,7 +750,6 @@ def add_sla_to_template(template, sla_id):
 @authorized_with_valid_token
 def createdep():
     access_token = iam_blueprint.session.token['access_token']
-    callback_url = app.config['CALLBACK_URL']
 
     app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
 
@@ -672,9 +765,11 @@ def createdep():
 
         kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
         feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
-
+        params['providerTimeoutMins'] = form_data[
+            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+            'PROVIDER_TIMEOUT']
         params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-        params['providerTimeoutMins'] = app.config['PROVIDER_TIMEOUT']
+        params['callback'] = app.config['CALLBACK_URL']
 
         if form_data['extra_opts.schedtype'].lower() == "man":
             template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
@@ -707,18 +802,15 @@ def createdep():
         app.logger.debug("Parameters: " + json.dumps(inputs))
 
         payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
-                   "parameters": inputs,
-                   'keepLastAttempt': kla,
-                   'timeoutMins': app.config['OVERALL_TIMEOUT'],
-                   'providerTimeoutMins': app.config['PROVIDER_TIMEOUT'],
-                   "callback": callback_url}
+                   "parameters": inputs}
+        payload.update(params)
 
         elastic = utils.eleasticdeployment(template)
-        upgradable = utils.upgradabledeployment(template)
+        updatable = utils.updatabledeployment(template)
 
     url = settings.orchestratorUrl + "/deployments/"
     headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-    response = requests.post(url, json=payload, params=params, headers=headers)
+    response = requests.post(url, json=payload, headers=headers)
 
     if not response.ok:
         flash("Error submitting deployment: \n" + response.text)
@@ -748,13 +840,14 @@ def createdep():
                                     provider_name=providername,
                                     endpoint='',
                                     feedback_required=feedback_required,
+                                    keep_last_attempt=kla,
                                     remote=1,
                                     issuer=rs_json['createdBy']['issuer'],
                                     storage_encryption=storage_encryption,
                                     vault_secret_uuid=vault_secret_uuid,
                                     vault_secret_key=vault_secret_key,
                                     elastic=elastic,
-                                    upgradable=upgradable)
+                                    updatable=updatable)
             db.session.add(deployment)
             db.session.commit()
 
