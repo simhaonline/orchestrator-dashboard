@@ -183,6 +183,6 @@ pip3 install -r requirements.txt
 
 Start the dashboard app:
 ```
-FLASK_app=orchdashboard flask run --host=0.0.0.0 --cert cert.pem --key privkey.pem --port 443
+FLASK_APP=orchdashboard flask run --host=0.0.0.0 --cert cert.pem --key privkey.pem --port 443
 ```
 
