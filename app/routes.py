@@ -72,7 +72,8 @@ def before_request_checks():
         session['enable_advanced_menu'] = settings.enable_advanced_menu
     if 'enable_update_deployment' not in session:
         session['enable_update_deployment'] = settings.enable_update_deployment
-
+    if 'hidden_deployment_columns' not in session:
+        session['hidden_deployment_columns'] = settings.hidden_deployment_columns
 
 def validate_configuration():
     if not settings.orchestratorConf.get('im_url'):
@@ -141,15 +142,10 @@ def show_deployments(subject):
             '{}@{}'.format(subject, issuer), 0, 999999)
         response = requests.get(url, headers=headers)
 
-        deporch = []
+        iids = []
         if response.ok:
             deporch = response.json()["content"]
-            deporch = updatedeploymentsstatus(deporch, subject)
-
-        iids = []
-        # make map of remote deployments
-        for dj in deporch:
-            iids.append(dj.uuid)
+            iids = updatedeploymentsstatus(deporch, subject)['iids']
 
         #
         # retrieve deployments from DB
@@ -291,6 +287,7 @@ def cvdeployment(d):
 
 
 def updatedeploymentsstatus(deployments, userid):
+    result = {}
     deps = []
     iids = []
     # uuid = ''
@@ -387,7 +384,9 @@ def updatedeploymentsstatus(deployments, userid):
             db.session.add(d)
             db.session.commit()
 
-    return deps
+    result['deployments'] = deps
+    result['iids'] = iids
+    return result
 
 
 def logexception(err):
@@ -466,7 +465,6 @@ def home():
         return render_template('portfolio.html', templates=templates)
 
 
-
 @app.route('/deployments')
 @authorized_with_valid_token
 def showdeployments():
@@ -482,12 +480,11 @@ def showdeployments():
         flash("Error retrieving deployment list: \n" + response.text, 'warning')
     else:
         deployments = response.json()["content"]
-        deployments = updatedeploymentsstatus(deployments, session['userid'])
+        result = updatedeploymentsstatus(deployments, session['userid'])
+        deployments = result['deployments']
         app.logger.debug("Deployments: " + str(deployments))
 
-        deployments_uuid_array = []
-        for deployment in deployments:
-            deployments_uuid_array.append(deployment.uuid)
+        deployments_uuid_array = result['iids']
         session['deployments_uuid_array'] = deployments_uuid_array
 
     return render_template('deployments.html', deployments=deployments)

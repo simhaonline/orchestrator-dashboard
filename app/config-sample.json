@@ -28,6 +28,7 @@
     "EXTERNAL_LINKS": [ { "url": "https://indigo-paas.cloud.ba.infn.it/status-page", "menu_item_name": "Services status" } ],
     "FEATURE_ADVANCED_MENU": "no",
     "FEATURE_UPDATE_DEPLOYMENT": "no",
+    "FEATURE_HIDDEN_DEPLOYMENT_COLUMNS": "4, 5, 7",
     "LOG_LEVEL": "info",
 
     "OVERALL_TIMEOUT": "3000",

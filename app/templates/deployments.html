@@ -1,6 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- Column indexes for FEATURE_HIDDEN_DEPLOYMENT_COLUMNS setting
 
+    0 = description
+    1 = uuid
+    2 = status
+    3 = creation time
+    4 = update time
+    5 = endpoint
+    6 = provider name
+    7 = physical id (infrastructure id)
+
+    value must be comma separated (i.e.  "4, 6, 7")
+
+    Empty string or missing setting means no hidden columns
+-->
 
 <div class="container-fluid">
 {% set ar = namespace(found=false) %}
@@ -31,9 +45,12 @@
           <th>Instance identifier</th>
           <th>Status</th>
           <th>Creation time</th>
+          <th>Update time</th>
           <th>Endpoint</th>
+          <th>Deployed at</th>
+          <th>Physical Id</th>
           <th>Actions</th>
-        </tr>
+         </tr>
       </thead>
       <!--Table head-->
       <!--Table body-->
@@ -56,9 +73,10 @@
                 {{deployment.status}}
             </td>
             <td>{{deployment.creation_time}}</td>
-            <!--td>{{deployment.update_time}}</td-->
-            <!--td>{{deployment.provider_name}}</td-->
+            <td>{{deployment.update_time}}</td>
             <td>{{deployment.endpoint}}</td>
+            <td>{{deployment.provider_name}}</td>
+            <td>{{deployment.physicalId}}</td>
             <td>
               <div class="btn-group">
                 <!-- DETAILS -->
@@ -123,11 +141,18 @@ $(document).ready(function () {
 
     $('#tableUserDeployments').dataTable( {
         "responsive": true,
-        "order": [],
-        "columnDefs": [ {
-            "targets"  : 'no-sort',
-            "orderable": false,
-         }],
+         "columnDefs": [
+             {
+                "targets"  : 'no-sort',
+                "orderable": false,
+             },
+             {% if session['hidden_deployment_columns'] != '' %}
+             {
+                "targets": [{{session['hidden_deployment_columns']}}],
+                "visible": false,
+             },
+             {% endif %}
+         ],
         "order": [[ 3, "desc" ]]
     });
 
