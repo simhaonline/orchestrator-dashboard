@@ -393,6 +393,13 @@ def logexception(err):
     line = linecache.getline(filename, lineno, f.f_globals)
     app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
+def check_template_access(allowed_groups, user_groups):
+
+    #check intersection of user groups with user membership
+    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
+        return True
+    else:
+        return False
 
 @app.route('/')
 def home():
@@ -403,9 +410,9 @@ def home():
 
     if account_info.ok:
         account_info_json = account_info.json()
+        user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-            user_groups = account_info_json['groups']
             if not set(settings.iamGroups).issubset(user_groups):
                 app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
                 message = Markup(
@@ -446,7 +453,10 @@ def home():
 
         session['userrole'] = user.role  # role
 
-        return render_template('portfolio.html', templates=toscaInfo)
+        templates = {k: v for (k, v) in toscaInfo.items() if
+                     check_template_access(v.get("metadata").get("allowed_groups"), user_groups)}
+
+        return render_template('portfolio.html', templates=templates)
 
 
 @app.route('/deployments')

@@ -63,7 +63,8 @@ def extracttoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_
                 "valid": True,
                 "description": "TOSCA Template",
                 "metadata": {
-                    "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png"
+                    "icon": "https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png",
+                    "allowed_groups": '*'
                 },
                 "enable_config_form": False,
                 "inputs": {},
