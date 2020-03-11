@@ -41,7 +41,8 @@ toscaInfo = utils.extractalltoscainfo(settings.toscaDir,
 
 app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
-app.logger.debug("ENABLE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
+app.logger.debug("FEATURE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
+app.logger.debug("FEATURE_UPDATE_DEPLOYMENT: " + str(settings.enable_update_deployment))
 
 # ______________________________________
 # TODO move from here
@@ -69,6 +70,8 @@ def before_request_checks():
         session['external_links'] = settings.external_links
     if 'enable_advanced_menu' not in session:
         session['enable_advanced_menu'] = settings.enable_advanced_menu
+    if 'enable_update_deployment' not in session:
+        session['enable_update_deployment'] = settings.enable_update_deployment
 
 
 def validate_configuration():
@@ -608,7 +611,8 @@ def depupdate(depid=None):
             template = dep.template
             tosca_info = utils.extracttoscainfo(yaml.full_load(io.StringIO(template)), None, None, None)
             sla_id = utils.getslapolicy(tosca_info)
-            slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
+            slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'],
+                                settings.orchestratorConf['cmdb_url'])
             ssh_pub_key = get_ssh_pub_key()
 
             return render_template('depupdate.html',
@@ -632,7 +636,6 @@ def depupdate(depid=None):
 def updatedep():
 
     access_token = iam_blueprint.session.token['access_token']
-    callback_url = app.config['CALLBACK_URL']
 
     form_data = request.form.to_dict()
 
@@ -646,14 +649,14 @@ def updatedep():
 
     params = {}
 
-    kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else dep.keep_last_attempt
+    keep_last_attempt = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data \
+        else dep.keep_last_attempt
     feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
     params['providerTimeoutMins'] = form_data[
         'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
         'PROVIDER_TIMEOUT']
     params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
     params['callback'] = app.config['CALLBACK_URL']
-
 
     if form_data['extra_opts.schedtype'].lower() == "man":
         template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
@@ -675,13 +678,13 @@ def updatedep():
 
     url = settings.orchestratorUrl + "/deployments/" + depid
     headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-    response = requests.put(url, json=payload, params=params, headers=headers)
+    response = requests.put(url, json=payload, headers=headers)
 
     if not response.ok:
         flash("Error updating deployment: \n" + response.text)
     else:
         # store data into database
-        dep.keep_last_attempt = kla
+        dep.keep_last_attempt = keep_last_attempt
         dep.feedback_required = feedback_required
         dep.description = additionaldescription
         dep.template = template_text
@@ -763,7 +766,7 @@ def createdep():
 
         params = {}
 
-        kla = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
+        keep_last_attempt = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
         feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
         params['providerTimeoutMins'] = form_data[
             'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
@@ -840,7 +843,7 @@ def createdep():
                                     provider_name=providername,
                                     endpoint='',
                                     feedback_required=feedback_required,
-                                    keep_last_attempt=kla,
+                                    keep_last_attempt=keep_last_attempt,
                                     remote=1,
                                     issuer=rs_json['createdBy']['issuer'],
                                     storage_encryption=storage_encryption,

@@ -20,5 +20,5 @@ orchestratorConf = {
 }
 
 external_links = app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else []
-
-enable_advanced_menu = app.config.get('ENABLE_ADVANCED_MENU') if app.config.get('ENABLE_ADVANCED_MENU') else "no"
+enable_advanced_menu = app.config.get('FEATURE_ADVANCED_MENU') if app.config.get('FEATURE_ADVANCED_MENU') else "no"
+enable_update_deployment = app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get('FEATURE_UPDATE_DEPLOYMENT') else "no"

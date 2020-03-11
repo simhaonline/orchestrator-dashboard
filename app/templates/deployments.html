@@ -51,7 +51,7 @@
             {% elif "FAIL" in deployment.status %}
             <span class="badge badge-danger"/>
             {% else %}
-            <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"></span>
+            <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"/></span>
             {% endif %}
             {{deployment.status}}</td>
             <td>{{deployment.creation_time}}</td>
@@ -71,7 +71,7 @@
                        data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
                   {% endif %}
                   <a class="dropdown-item" href="{{ url_for('deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
-                  {% if session['enable_advanced_menu'] == "yes" and deployment.updatable == 1 %}
+                  {% if session['enable_update_deployment'] == "yes" and deployment.updatable == 1 %}
                     <a class="dropdown-item" href="{{ url_for('depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
                   {% endif %}
                   <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deplog', physicalId=deployment.physicalId) }}">
