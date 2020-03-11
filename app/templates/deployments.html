@@ -43,17 +43,18 @@
              {% set ar.found = true %}
         {% endif %}
         <tr>
-	    <td>{{deployment.description}}</td>	
-	    <td><strong><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
+            <td>{{deployment.description}}</td>
+            <td><strong><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
             <td>
-            {% if "COMPLETE" in deployment.status %}
-            <span class="badge badge-success"/>
-            {% elif "FAIL" in deployment.status %}
-            <span class="badge badge-danger"/>
-            {% else %}
-            <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"/></span>
-            {% endif %}
-            {{deployment.status}}</td>
+                {% if "COMPLETE" in deployment.status %}
+                <span class="badge badge-success"/>
+                {% elif "FAIL" in deployment.status %}
+                <span class="badge badge-danger"/>
+                {% else %}
+                <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"/></span>
+                {% endif %}
+                {{deployment.status}}
+            </td>
             <td>{{deployment.creation_time}}</td>
             <!--td>{{deployment.update_time}}</td-->
             <!--td>{{deployment.provider_name}}</td-->
@@ -86,7 +87,6 @@
             </td>
         </tr>
         <!-- Modal DELETE -->
-        <!-- Put modal here to avoid problem with table collapse -->
         <div class="modal fade" id="delete_confirm_{{deployment.uuid}}" role="dialog">
           <div class="modal-dialog" role="document">
             <div class="modal-content">
@@ -120,16 +120,7 @@
 
 <script>
 $(document).ready(function () {
-    $("#deleteBtn").click(function () {
-        // add spinner to button
-        $("#cancelBtn").addClass("disabled", true);
-        $(this).addClass("disabled", true);
-        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...` );
-    });
-});
-</script>
 
-<script>
     $('#tableUserDeployments').dataTable( {
         "responsive": true,
         "order": [],
@@ -139,7 +130,16 @@ $(document).ready(function () {
          }],
         "order": [[ 3, "desc" ]]
     });
+
+    $("#deleteBtn").click(function () {
+        // add spinner to button
+        $("#cancelBtn").addClass("disabled", true);
+        $(this).addClass("disabled", true);
+        $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...` );
+    });
+});
 </script>
+
 
 {% endblock %}
 
