@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class = "jumbotron jumbotron-fluid jumbotron-custom">
+  <div class="container">
+    <div class="row">
+        <div class="col">
+            <br>
+            <br>
+            <h1 class="display-5">Welcome to ReCaS Cloud Services Portal! </h1>
+
+          <p></p>
+          <p>
+            <a class="btn btn-info btn-lg m-2" role="button" href="http://www.recas-bari.it" target="_blank">About us</a>
+            <a class="btn btn-primary btn-lg m-2" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
+          </p>
+        </div>
+        <div class="col">
+          <img src="static/images/recas/recas_logo.png"></img>
+        </div>
+    </div>
+    <hr style="border:2px solid #90caf9;border-radius: 1px;">
+    <div class="row">
+        <div class="col m-2">
+          <a href="https://www.indigo-datacloud.eu/" target="_blank">
+              <img src="static/images/recas/indigo_logo.png" class="rounded-circle shadow" style="max-width:200px">
+          </a>
+        </div>
+        <div class="col m-2">
+          <a href="https://deep-hybrid-datacloud.eu/" target="_blank">
+              <img src="static/images/recas/deep_logo.png" class="rounded-circle shadow" style="max-width:200px">
+          </a>
+        </div>
+        <div class="col m-2">
+            <a href="http://www.extreme-datacloud.eu/" target="_blank">
+                <img src="static/images/recas/xdc_logo.png" class="rounded-circle shadow" style="max-width:200px">
+            </a>
+        </div>
+        <div class="col m-2">
+            <a href="https://www.dtascarl.org/en/progettidta/rpasinair/" target="_blank">
+                <img src="static/images/recas/rpasinair_logo.png" class="rounded-circle shadow" style="max-width:200px">
+            </a>
+        </div>
+        <div class="col m-2">
+          <img src="static/images/recas/close_logo.png" class="rounded-circle shadow" style="max-width:200px;border: 1px solid white;">
+        </div>
+    </div>
+  </div>
+</div>
+
+<style>
+
+.jumbotron-custom {
+    background: #ffffff;
+    color: #1C486F;
+    #background: #1C486F;
+    #color: #ffffff;
+    font-weight: bold;
+    font-family: 'Thasadith', sans-serif;
+}
+</style>
+
+{% endblock %}

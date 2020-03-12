@@ -43,6 +43,7 @@ app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
 app.logger.debug("ENABLE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
 
+
 # ______________________________________
 # TODO move from here
 # vault section
@@ -101,7 +102,7 @@ def only_for_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session['userrole'].lower() == 'admin':
-            return render_template('home.html')
+            return render_template(app.config.get('HOME_TEMPLATE'))
 
         return f(*args, **kwargs)
 
@@ -194,7 +195,7 @@ def show_user(subject):
     if user is not None:
         return render_template('user.html', user=user)
     else:
-        return render_template('home.html')
+        return render_template(app.config.get('HOME_TEMPLATE'))
 
 
 def get_users():
@@ -227,7 +228,7 @@ def show_users():
 @app.route('/login')
 def login():
     session.clear()
-    return render_template('home.html')
+    return render_template(app.config.get('HOME_TEMPLATE'))
 
 
 @app.route('/slas')
