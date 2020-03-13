@@ -68,7 +68,7 @@ In particular, the following tags are supported:
 | metadata.icon  |  Used for showing the card image. If no image URL is provided, the dashboard will load this [icon](https://cdn4.iconfinder.com/data/icons/mosaicon-04/512/websettings-512.png). | String |
 | metadata.display_name | Used for the card title. If not provided, the template name will be used   | String |
 | metadata.tag  | Used for the card ribbon (displayed on the right bottom corner)   |     String |
-| metadata.allowed_groups | Used for showing the template only to members of specific groups |  String <br> - "*" == any group can see the template <br> - "group1,group2" == only members of _group1_ and _group2_ can see the template |
+| metadata.allowed_groups | Used for showing the template only to members of specific groups |  String <br> - "*" == any group can see the template <br> - "group1,group2" == only members of _group1_ and _group2_ can see the template. :boom: Do not use spaces to separate the groups |
 
 
 Example of template metadata:
