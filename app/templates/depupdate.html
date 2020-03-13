@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    {% include 'flashed_messages.html' %}
+
+    <br>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+          <div class="row">
+            <div class="col-md-12">
+               <h4 class="font-weight-bold text-primary">
+                Update deployment{% if template_name is defined %}: {{template_name}}{% endif %}
+              </h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-body">
+            {% if template_description is defined %}
+              <div class="alert alert-info">
+                <strong>Description:</strong> {{template_description}}
+              </div>
+            {% endif %}
+
+            <form id="depSubmit" action="{{ url_for('updatedep', template=selectedTemplate) }}" method="post" onsubmit="return checkForm(this);">
+                <div class="form-group row">
+                    <div class="col-md-2">Instance description:</div>
+                    <div class="col-md-10">
+                    <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value={{instance_description}} required>
+                    </div>
+                </div>
+
+                <ul class="nav nav-tabs">
+                  <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#TemplateTab">Template</a></li>
+                  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#AdvancedTab">Advanced</a></li>
+                </ul>
+
+                <div class="tab-content">
+
+                  <div class="tab-pane fade show active" id=TemplateTab>
+                    <div class="row">
+                        <div class="col-md-10"></div>
+                        <div class="col-md-2">
+                            <div class="custom-control custom-switch">
+                                <input type="checkbox" class="custom-control-input" id="switchEdit">
+                                <label class="custom-control-label" for="switchEdit">Edit mode</label>
+                            </div>
+                        </div>
+                    </div>
+                      <div class="card-body" id="editorcontainer" style="position: relative; height: 80vh">
+                        <div id="editorace">{{template|safe}}</div>
+                      </div>
+                  </div>
+
+                  <div class="tab-pane fade" id="AdvancedTab">
+                    {% include 'advanced_config.html' %}
+                  </div>
+                </div>
+
+                <input type="hidden" name="depid" id="depid" value="{{depid}}"/>
+                <input type="hidden" name="template" id="template" value=""/>
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('showdeployments') }}'">
+                <span class="fas fa-ban mr-2"></span>Cancel</button>
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <div class="modal" id="updateWarning" role="dialog" >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Deployment Update Warning</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>You only have to use this editor to change the number of nodes required by the deployment!<br>
+                This is an advanced feature and you use it at your own risk, any other changes will cause a catastrophic error!<br>
+                The rest of the input parameters will be sent using the data entered during the original deployment.<br>
+                You can choose a destination for this upgrade or allow the system to find the most suitable provider.<br>
+                Once the template has been modified you will have to use the "SUBMIT" command.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="modal" id="unchangedWarning" role="dialog" >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title">Template unchanged!</h4>
+            <button type="button" class="close" data-dismiss="modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p>You have not made any changes to the template.<br/>No changes will be applied!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">OK</button>
+          </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+
+<script type="text/javascript">
+
+    var editor;
+    var userwarned = false;
+    var templatechanged = false;
+
+    $(document).ready(function () {
+
+        $('#switchEdit').click(function () {
+            changeEditorMode();
+        });
+
+        // initialize
+        editor = ace.edit("editorace");
+        //editor.setTheme("ace/theme/mytheme");
+        editor.session.setMode("ace/mode/yaml");
+        editor.session.on('change', function(delta) {
+            templatechanged = true;
+        });
+        changeEditorMode();
+        changeEditorSize();
+
+        function changeEditorSize(){
+            var wh = window.innerHeight - 540;
+            if (wh < 100) wh = 100;
+            document.getElementById("editorcontainer").style.height = wh;
+        }
+
+        function changeEditorMode() {
+             if ($("#switchEdit").is(":checked")) {
+                 if (!userwarned) {
+                    $("#updateWarning").modal({backdrop: 'static', keyboard: false});
+                    userwarned = true;
+                 }
+                editor.setReadOnly(false);
+            } else {
+                editor.setReadOnly(true);
+            }
+        }
+
+        // Attaching the event listener function to window's resize event
+        window.addEventListener("resize", changeEditorSize);
+    });
+
+    function checkForm(form)
+    {
+        if(templatechanged == false) {
+          $('#unchangedWarning').modal('show');
+           return false;
+        }
+        document.getElementById("template").value = editor.getValue();
+        return true;
+    }
+
+</script>
+{% endblock %}

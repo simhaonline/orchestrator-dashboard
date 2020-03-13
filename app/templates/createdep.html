@@ -48,7 +48,7 @@
             <div class="alert alert-info">
                 <strong>Description:</strong> {{template['description']}}
             </div>
-        
+
             <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
                 <div class="form-group">
                     <label for="additional_description">Instance description</label>
@@ -94,8 +94,8 @@ $(document).ready(function () {
         // add spinner to button
         $(".submitBtn").html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...` );
         //disable cancel too
-        $("#cancelBtn").attr("disabled", true);    
-        $("#cancelBtn").attr("onclick", "#");  
+        $("#cancelBtn").attr("disabled", true);
+        $("#cancelBtn").attr("onclick", "#");
         return true;
     });
 });
@@ -145,7 +145,7 @@ $('#popupMaintenanceCheckbox').click(function(){
     if ($('#popupMaintenanceCheckbox').attr('checked', true)) {
         localStorage.DoNotShowMessageAgain = "true";
     }
-}); 
+});
 </script>
 {% endif  %}
 

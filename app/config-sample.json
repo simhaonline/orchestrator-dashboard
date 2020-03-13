@@ -10,8 +10,6 @@
     "VAULT_URL": "https://my-vault-instance.com",
     "CALLBACK_URL": "https://my-orchestrator-dashboard.com/callback",
 
-    "ENABLE_ADVANCED_MENU": "no",
-
     "TOSCA_TEMPLATES_DIR": "/opt/tosca-templates",
     "TOSCA_PARAMETERS_DIR": "/opt/tosca-parameters",
     "TOSCA_METADATA_DIR": "/opt/tosca-metadata",
@@ -28,7 +26,9 @@
     "ADMINS": "['admin@foo.it','other_admin@test.it']",
 
     "EXTERNAL_LINKS": [ { "url": "https://indigo-paas.cloud.ba.infn.it/status-page", "menu_item_name": "Services status" } ],
-    "ENABLE_ADVANCED_MENU": "no",
+    "FEATURE_ADVANCED_MENU": "no",
+    "FEATURE_UPDATE_DEPLOYMENT": "no",
+    "FEATURE_HIDDEN_DEPLOYMENT_COLUMNS": "4, 5, 7",
     "LOG_LEVEL": "info",
 
     "OVERALL_TIMEOUT": "3000",

@@ -36,13 +36,12 @@ def is_enabling_services(deployment_type, service_type):
     else:
         return True
 
+
 def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
-
-
     headers = {'Authorization': 'bearer %s' % access_token}
 
     url = slam_url + "/preferences/" + session['organisation_name']
-    
+
     response = requests.get(url, headers=headers, timeout=20, verify=False)
 
     response.raise_for_status()
@@ -50,16 +49,17 @@ def get_slas(access_token, slam_url, cmdb_url, deployment_type=""):
 
     filtered_slas = []
     for i in range(len(slas)):
-       sitename, endpoint, service_type, iam_enabled = get_sla_extra_info(access_token,slas[i]['services'][0]['service_id'], cmdb_url)
+        sitename, endpoint, service_type, iam_enabled = get_sla_extra_info(access_token,
+                                                                           slas[i]['services'][0]['service_id'],
+                                                                           cmdb_url)
 
-       if  is_enabling_services(deployment_type, service_type):
-           slas[i]['service_id']=slas[i]['services'][0]['service_id']
-           slas[i]['service_type']=service_type
-           slas[i]['sitename']=sitename
-           slas[i]['endpoint']=endpoint
-           slas[i]['iam_enabled']=iam_enabled
+        if is_enabling_services(deployment_type, service_type):
+            slas[i]['service_id'] = slas[i]['services'][0]['service_id']
+            slas[i]['service_type'] = service_type
+            slas[i]['sitename'] = sitename
+            slas[i]['endpoint'] = endpoint
+            slas[i]['iam_enabled'] = iam_enabled
 
-           filtered_slas.append(slas[i])
-
+            filtered_slas.append(slas[i])
 
     return filtered_slas
