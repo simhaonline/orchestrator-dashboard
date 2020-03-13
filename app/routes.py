@@ -775,7 +775,8 @@ def createdep():
 
         params = {}
 
-        keep_last_attempt = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
+        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data else 0
+        params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
         feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
         params['providerTimeoutMins'] = form_data[
             'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
