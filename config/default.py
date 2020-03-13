@@ -26,6 +26,7 @@ MAIL_SENDER = "admin@orchestrator-dashboard"
 SUPPORT_EMAIL = "marica.antonacci@ba.infn.it"
 ADMINS = "['marica.antonacci@ba.infn.it']"
 ENABLE_ADVANCED_MENU = "no"
+ENABLE_VAULT_INTEGRATION = "no"
 EXTERNAL_LINKS = []
 OVERALL_TIMEOUT = 720
 LOG_LEVEL = "info"

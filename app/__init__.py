@@ -37,7 +37,8 @@ def inject_settings():
     return dict(
         footer_template   = app.config.get('FOOTER_TEMPLATE'),
         welcome_message   = app.config.get('WELCOME_MESSAGE'),
-        navbar_brand_text = app.config.get('NAVBAR_BRAND_TEXT')
+        navbar_brand_text = app.config.get('NAVBAR_BRAND_TEXT'),
+        enable_vault_integration = False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True
     )
 
 

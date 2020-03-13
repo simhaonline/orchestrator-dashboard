@@ -99,8 +99,10 @@
                             <img class="rounded-circle" src="{{ session['gravatar'] }}"/> {{ session['username'] }}<span class="caret"></span>
                         </a>
                         <div class="dropdown-menu">
+                            {% if enable_vault_integration %}
                             <a class="dropdown-item" href="{{ url_for('ssh_keys') }}">SSH keys</a>
                             <div class="dropdown-divider"></div>
+                            {% endif %}
                             <a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a>
                         </div>
 	            </li>
