@@ -70,7 +70,7 @@
 <body>
     <nav class="navbar navbar-dark bg-dark navbar-expand-md sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{{ url_for("home") }}">PaaS Orchestrator Dashboard</a>
+            <a class="navbar-brand" href="{{ url_for("home") }}">{{ navbar_brand_text }}</a>
             <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#myNavbar">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -109,8 +109,10 @@
                             <img class="rounded-circle" src="{{ session['gravatar'] }}"/> {{ session['username'] }}<span class="caret"></span>
                         </a>
                         <div class="dropdown-menu">
+                            {% if enable_vault_integration %}
                             <a class="dropdown-item" href="{{ url_for('ssh_keys') }}">SSH keys</a>
                             <div class="dropdown-divider"></div>
+                            {% endif %}
                             <a class="dropdown-item" href="{{ url_for("logout") }}">Logout</a>
                         </div>
 	                </li>
@@ -120,7 +122,7 @@
         </div>
     </nav>
     {% block content %}{% endblock %}
-    {% include 'footer.html' %}
+    {% include footer_template %}
 </body>
 </html>
 

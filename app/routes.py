@@ -44,6 +44,7 @@ app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
 app.logger.debug("FEATURE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
 app.logger.debug("FEATURE_UPDATE_DEPLOYMENT: " + str(settings.enable_update_deployment))
 
+
 # ______________________________________
 # TODO move from here
 # vault section
@@ -105,7 +106,7 @@ def only_for_admin(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session['userrole'].lower() == 'admin':
-            return render_template('home.html')
+            return render_template(app.config.get('HOME_TEMPLATE'))
 
         return f(*args, **kwargs)
 
@@ -193,7 +194,7 @@ def show_user(subject):
     if user is not None:
         return render_template('user.html', user=user)
     else:
-        return render_template('home.html')
+        return render_template(app.config.get('HOME_TEMPLATE'))
 
 
 def get_users():
@@ -226,7 +227,7 @@ def show_users():
 @app.route('/login')
 def login():
     session.clear()
-    return render_template('home.html')
+    return render_template(app.config.get('HOME_TEMPLATE'))
 
 
 @app.route('/slas')
@@ -398,6 +399,13 @@ def logexception(err):
     line = linecache.getline(filename, lineno, f.f_globals)
     app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
+def check_template_access(allowed_groups, user_groups):
+
+    #check intersection of user groups with user membership
+    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
+        return True
+    else:
+        return False
 
 def check_template_access(allowed_groups, user_groups):
     #check intersection of user groups with user membership
@@ -419,10 +427,10 @@ def home():
         user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-             if not set(settings.iamGroups).issubset(user_groups):
-                app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
+            if set(settings.iamGroups)&set(user_groups) == set():
+                app.logger.debug("No match on group membership. User group membership: {0} whereas requested" + json.dumps(user_groups))
                 message = Markup(
-                    'You need to be a member of the following IAM groups: {0}. <br>' +
+                    'You need to be a member of one (or more) of these IAM groups: {0}. <br>' +
                     'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
                         json.dumps(settings.iamGroups), settings.iamUrl))
                 raise Forbidden(description=message)
@@ -789,6 +797,9 @@ def createdep():
         else:
             remove_sla_from_template(template)
 
+        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0    
+        params['callback'] = callback_url #always needed
+
         additionaldescription = form_data['additional_description']
 
         inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
@@ -816,6 +827,7 @@ def createdep():
 
         payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
                    "parameters": inputs}
+        # set additional params
         payload.update(params)
 
         elastic = utils.eleasticdeployment(template)

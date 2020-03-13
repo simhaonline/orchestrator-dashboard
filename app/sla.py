@@ -21,11 +21,12 @@ def get_sla_extra_info(access_token, service_id, cmdb_url):
 
 
 def is_enabling_services(deployment_type, service_type):
+
     if deployment_type == "":
         return True
 
     if deployment_type == "CLOUD":
-        return True if service_type in ["org.openstack.nova", "com.amazonaws.ec2"] else False
+        return True if service_type in [ "org.openstack.nova", "com.amazonaws.ec2" ] else False
     elif deployment_type == "MARATHON":
         return True if "eu.indigo-datacloud.marathon" in service_type else False
     elif deployment_type == "CHRONOS":
