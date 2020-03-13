@@ -414,12 +414,9 @@ def home():
         user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-            if not set(settings.iamGroups).issubset(user_groups):
-                app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
-                message = Markup(
-                    'You need to be a member of the following IAM groups: {0}. <br>' +
-                    'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
-                        json.dumps(settings.iamGroups), settings.iamUrl))
+            if set(settings.iamGroups)&set(user_groups) == set():
+                app.logger.debug("No match on group membership. User group membership: {0} whereas requested" + json.dumps(user_groups))
+                message = Markup('You need to be a member of one (or more) of these IAM groups: {0}. <br> Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(json.dumps(settings.iamGroups), settings.iamUrl))
                 raise Forbidden(description=message)
 
         session['userid'] = account_info_json['sub']
