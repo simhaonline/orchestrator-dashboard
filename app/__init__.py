@@ -24,7 +24,6 @@ alembic: Alembic = Alembic()
 app = Flask(__name__, instance_relative_config=True)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
-#app.config.from_json('config.json')
 app.config.from_object('config.default')
 app.config.from_json('config.json')
 
@@ -32,13 +31,14 @@ profile = app.config.get('CONFIGURATION_PROFILE')
 if profile != 'default':
     app.config.from_object('config.' + profile)
 
+
 @app.context_processor
 def inject_settings():
     return dict(
         footer_template   = app.config.get('FOOTER_TEMPLATE'),
         welcome_message   = app.config.get('WELCOME_MESSAGE'),
         navbar_brand_text = app.config.get('NAVBAR_BRAND_TEXT'),
-        enable_vault_integration = False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True
+        enable_vault_integration = False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True
     )
 
 

@@ -400,13 +400,6 @@ def logexception(err):
     line = linecache.getline(filename, lineno, f.f_globals)
     app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
-def check_template_access(allowed_groups, user_groups):
-
-    #check intersection of user groups with user membership
-    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
-        return True
-    else:
-        return False
 
 def check_template_access(allowed_groups, user_groups):
     # check intersection of user groups with user membership
@@ -798,7 +791,7 @@ def createdep():
             template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
         else:
             remove_sla_from_template(template)
-            
+
         additionaldescription = form_data['additional_description']
 
         inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
