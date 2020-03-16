@@ -23,7 +23,9 @@ class VaultIntegration:
     # Use exchange token to add it.
     issuer_url = issuer_url + '/token'
     
-    payload_string = '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "'+audience_claim+'", "subject_token": "'+jwt_token+'", "scope": "openid address phone profile offline_access email" }'
+    payload_string = '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "'+\
+                     audience_claim+'", "subject_token": "'+jwt_token+\
+                     '", "scope": "openid address phone profile offline_access email" }'
 
     # Convert string payload to dictionary
     payload =  ast.literal_eval(payload_string)
@@ -48,10 +50,10 @@ class VaultIntegration:
 
     self.vault_auth_token = deserialized_response["auth"]["client_token"]
 
-  #______________________________________
+
   def get_auth_token(self): return self.vault_auth_token
 
-  #______________________________________
+
   def get_wrapping_token(self, wrap_ttl, auth_token, policy, ttl, period):
     """
     Get Vault wrapping token with specific policy
@@ -72,7 +74,7 @@ class VaultIntegration:
 
     return deserialized_response["wrap_info"]["token"]
 
-  #______________________________________
+
   def get_token(self, auth_token, policy, ttl, period):
     """
     Get Vault token with specific policy
@@ -92,7 +94,7 @@ class VaultIntegration:
 
     return deserialized_response["auth"]["client_token"]
 
-  #______________________________________
+
   def write_secret(self, token, secret_path, key, value):
     """
     Write Secret to Vault
@@ -118,7 +120,6 @@ class VaultIntegration:
     return deserialized_response
 
 
-  #______________________________________
   def read_secret(self, token, secret_path, key):
     """
     Read Secret from Vault.
@@ -141,7 +142,7 @@ class VaultIntegration:
 
     return deserialized_response["data"]["data"][key]
 
-  #______________________________________
+
   def delete_secret(self, token, secret_path):
     """
     Permanently delete secret and metadata from Vault.
@@ -155,7 +156,7 @@ class VaultIntegration:
 
     response = requests.delete(delete_url, headers=headers, verify=False)
 
-  #______________________________________
+
   def revoke_token(self, token):
     """
     Revoke (self) token
@@ -167,4 +168,4 @@ class VaultIntegration:
                "X-Vault-Token": token
               }
 
-    response = requests.post( revoke_url, headers=headers, verify=False )
+    response = requests.post(revoke_url, headers=headers, verify=False)
