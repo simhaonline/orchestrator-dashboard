@@ -8,10 +8,10 @@ def get_sla_extra_info(access_token, service_id, cmdb_url):
     response = requests.get(url, headers=headers, timeout=20)
     response.raise_for_status()
 
-    service_type=response.json()['data']['service_type']
-    sitename=response.json()['data']['sitename']
-    endpoint=response.json()['data'].get('endpoint')
-    iam_enabled=response.json()['data'].get('iam_enabled')
+    service_type = response.json()['data']['service_type']
+    sitename = response.json()['data']['sitename']
+    endpoint = response.json()['data'].get('endpoint')
+    iam_enabled = response.json()['data'].get('iam_enabled')
     if 'properties' in response.json()['data']:
         if 'gpu_support' in response.json()['data']['properties']:
             service_type = service_type + " (gpu_support: " + \

@@ -1,4 +1,8 @@
-import json, yaml, requests, os, io
+import json
+import yaml
+import requests
+import os
+import io
 from fnmatch import fnmatch
 from hashlib import md5
 
@@ -185,15 +189,15 @@ def updatabledeployment(template):
     return hasnodeoftype(template, 'tosca.nodes.indigo.LRMS.WorkerNode')
 
 
-def hasnodeoftype(template, type):
+def hasnodeoftype(template, typo):
     found = False
     if 'topology_template' in template:
         if 'node_templates' in template['topology_template']:
-            for (j,u) in template['topology_template']['node_templates'].items():
+            for (j, u) in template['topology_template']['node_templates'].items():
                 if found:
                     break
                 for (k, v) in u.items():
-                    if k == 'type' and type in v:
+                    if k == 'type' and typo in v:
                         found = True
                         break
     return found

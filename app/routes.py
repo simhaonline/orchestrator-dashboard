@@ -75,6 +75,7 @@ def before_request_checks():
     if 'hidden_deployment_columns' not in session:
         session['hidden_deployment_columns'] = settings.hidden_deployment_columns
 
+
 def validate_configuration():
     if not settings.orchestratorConf.get('im_url'):
         app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
@@ -400,8 +401,8 @@ def logexception(err):
 
 
 def check_template_access(allowed_groups, user_groups):
-    #check intersection of user groups with user membership
-    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
+    # check intersection of user groups with user membership
+    if (set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
         return True
     else:
         return False
@@ -419,7 +420,7 @@ def home():
         user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-             if not set(settings.iamGroups).issubset(user_groups):
+            if not set(settings.iamGroups).issubset(user_groups):
                 app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
                 message = Markup(
                     'You need to be a member of the following IAM groups: {0}. <br>' +
@@ -658,9 +659,10 @@ def updatedep():
 
     params = {}
 
-    keep_last_attempt = params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data \
+    keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data \
         else dep.keep_last_attempt
     feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
+    params['keepLastAttempt'] = 'true' if keep_last_attempt == 1 else 'false'
     params['providerTimeoutMins'] = form_data[
         'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
         'PROVIDER_TIMEOUT']
@@ -1159,7 +1161,7 @@ def get_monitoring_info():
     if response.ok:
         try:
             monitoring_data = response.json()['result']['groups'][0]['paasMachines'][0]['services'][0]['paasMetrics']
-        except Exception as e:
+        except Exception:
             app.logger.debug("Error getting monitoring data")
 
     return render_template('monitoring_metrics.html', monitoring_data=monitoring_data)
