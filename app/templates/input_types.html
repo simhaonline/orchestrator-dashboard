@@ -65,9 +65,27 @@
       <input type="text" class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if ssh_pub_key is not none %}placeholder="{{value.placeholder}}"{% endif %} {% if ssh_pub_key is none %}required{% endif %} />
     <!-- end select type -->
 
+     swift_upload
+    <!-- swift_upload special input field -->
+    {% elif value.type == "swift_upload" %}
+      <!-- input type="file" class="form-control-file" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" /-->
+    <!-- end select type -->
+    <div class="custom-file">
+      <input type="file" class="custom-file-input" id="customFile">
+      <label class="custom-file-label" for="customFile">Choose file</label>
+    </div>
+
     {% else %}
       <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} />
     {% endif %}  <!-- end tag type existence if -->
   <span id="help{{key}}" class="text-muted">{{value.description}}</span>
   {% endif %}
 </div>
+
+<script>
+  $('.custom-file-input').on('change', function() {
+   let fileName = $(this).val().split('\\').pop();
+   $(this).next('.custom-file-label').addClass("selected").html(fileName);
+});
+
+</script>
