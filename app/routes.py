@@ -798,7 +798,6 @@ def createdep():
             remove_sla_from_template(template)
 
         feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0    
-        params['callback'] = callback_url #always needed
 
         additionaldescription = form_data['additional_description']
 
