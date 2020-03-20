@@ -35,7 +35,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
 app.config.from_object('config.default')
 app.config.from_json('config.json')
-app.config.from_json('vault-config.json')
+if app.config.get("ENABLE_VAULT_INTEGRATION"):
+    app.config.from_json('vault-config.json')
 
 profile = app.config.get('CONFIGURATION_PROFILE')
 if profile != 'default':
