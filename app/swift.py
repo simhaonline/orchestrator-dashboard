@@ -66,7 +66,7 @@ class Swift:
                         + self.key + "§" \
                         + self.tenant + "§" \
                         + self.basecontainername
-                    self.token = self._pack(t)
+                    self.token = self.pack(t)
                 return self.token
         raise ValueError("Invalid key.")
 
@@ -94,7 +94,7 @@ class Swift:
         self.getconnection().delete_object(container=containername,
                                            obj=objectname)
 
-    def _pack(self, data):
+    def pack(self, data):
         iv = get_random_bytes(AES.block_size)
         cipher = AES.new(self.private_key, AES.MODE_CBC, iv)
         return b64encode(iv + cipher.encrypt(pad(data.encode('utf-8'),

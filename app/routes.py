@@ -1,7 +1,8 @@
-from app import app, iam_blueprint, sla as sla, mail, settings, utils, Swift
-from markupsafe import Markup
+from app import app, iam_blueprint, sla as sla, mail, settings, utils
 from app import db
 from app.models import Deployment, User
+from app.swift import Swift
+from markupsafe import Markup
 from werkzeug.exceptions import Forbidden
 from werkzeug.utils import secure_filename
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
@@ -44,7 +45,6 @@ logging.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 logging.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
 logging.debug("FEATURE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
 logging.debug("FEATURE_UPDATE_DEPLOYMENT: " + str(settings.enable_update_deployment))
-
 
 # ______________________________________
 # TODO move from here
@@ -636,7 +636,6 @@ def depupdate(depid=None):
 @app.route('/updatedep', methods=['POST'])
 @authorized_with_valid_token
 def updatedep():
-
     access_token = iam_blueprint.session.token['access_token']
 
     form_data = request.form.to_dict()
@@ -775,7 +774,7 @@ def createswifttoken():
                 + swift_k + "§" \
                 + swift_t + "§" \
                 + swift_b
-            token = swift._pack(t)
+            token = swift.pack(t)
             return render_template('createswifttoken.html', token=token)
         else:
             flash("All fields must be filled! Cannot create swift token.")
@@ -785,7 +784,6 @@ def createswifttoken():
 @app.route('/submit', methods=['POST'])
 @authorized_with_valid_token
 def createdep():
-
     access_token = iam_blueprint.session.token['access_token']
     selected_template = request.args.get('template')
     source_template = toscaInfo[selected_template]
@@ -822,8 +820,9 @@ def createdep():
 
     doprocess = True
     swiftprocess = False
+    containername = filename = None
 
-    # process swift file upload if present
+    # process swift file upload if present
     stinputs = source_template['inputs']
     swift_filename = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
                                             else None) == 'swift_upload', request.files), None)
@@ -851,7 +850,7 @@ def createdep():
             if swift_uuid is not None:
                 upload_folder = os.path.join(upload_folder, swift_uuid)
             filename = secure_filename(file.filename)
-            fullfilename = os.path.join(upload_folder, filename )
+            fullfilename = os.path.join(upload_folder, filename)
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)
             file.save(fullfilename)
@@ -860,7 +859,7 @@ def createdep():
                 inputs[swift_filename] = file.filename
 
             containername = basecontainername = swift.basecontainername
-            containers  = swift.getownedcontainers()
+            containers = swift.getownedcontainers()
             basecontainer = next(filter(lambda x: x['name'] == basecontainername, containers), None)
             if basecontainer is None:
                 swift.createcontainer(basecontainername)
@@ -871,15 +870,15 @@ def createdep():
             with open(fullfilename, 'rb') as f:
                 calchash = swift.md5hash(f)
             with open(fullfilename, 'rb') as f:
-                hash = swift.createobject(containername, filename, contents=f.read())
+                objecthash = swift.createobject(containername, filename, contents=f.read())
 
-            if hash is not None and hash != swift.emptyMd5:
+            if hash is not None and objecthash != swift.emptyMd5:
                 swiftprocess = True
 
             os.remove(fullfilename)
             os.rmdir(upload_folder)
 
-            if calchash != hash:
+            if calchash != objecthash:
                 doprocess = False
                 flash("Wrong swift file checksum!")
         else:
@@ -963,7 +962,7 @@ def createdep():
             else:
                 flash("Deployment with uuid:{} is already in the database!".format(uuid))
 
-    if doprocess == False and swiftprocess == True:
+    if doprocess is False and swiftprocess is True:
         swift.removeobject(containername, filename)
 
     return redirect(url_for('showdeployments'))

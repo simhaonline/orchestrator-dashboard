@@ -13,8 +13,6 @@ from flask_migrate import Migrate, upgrade
 import logging
 
 # db variable initialization
-from app.swift import Swift
-
 db: SQLAlchemy = SQLAlchemy()
 
 # initialize Migrate
@@ -37,10 +35,10 @@ if profile is not None and profile != 'default':
 @app.context_processor
 def inject_settings():
     return dict(
-        footer_template   = app.config.get('FOOTER_TEMPLATE'),
-        welcome_message   = app.config.get('WELCOME_MESSAGE'),
-        navbar_brand_text = app.config.get('NAVBAR_BRAND_TEXT'),
-        enable_vault_integration = False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True
+        footer_template=app.config.get('FOOTER_TEMPLATE'),
+        welcome_message=app.config.get('WELCOME_MESSAGE'),
+        navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
+        enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True
     )
 
 
@@ -105,7 +103,6 @@ else:
         ins = alembic_version.insert().values(version_num=baseversion)
         conn = engine.connect()
         result = conn.execute(ins)
-
 
 # update database, run flask_migrate.upgrade()
 with app.app_context():
