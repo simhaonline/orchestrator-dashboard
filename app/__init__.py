@@ -10,6 +10,9 @@ from flask_dance.consumer import OAuth2ConsumerBlueprint
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, upgrade
+from app.extensions.flask_tosca import ToscaInfo
+from app.extensions.flask_vault import Vault
+
 import logging
 
 # db variable initialization
@@ -21,12 +24,18 @@ migrate: Migrate = Migrate()
 # Intialize the extension
 alembic: Alembic = Alembic()
 
+# initialize ToscaInfo extension
+tosca : ToscaInfo = ToscaInfo()
+
+# initialize Vault extension
+vault : Vault = Vault()
+
 app = Flask(__name__, instance_relative_config=True)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
-#app.config.from_json('config.json')
 app.config.from_object('config.default')
 app.config.from_json('config.json')
+app.config.from_json('vault-config.json')
 
 profile = app.config.get('CONFIGURATION_PROFILE')
 if profile != 'default':
@@ -35,16 +44,29 @@ if profile != 'default':
 @app.context_processor
 def inject_settings():
     return dict(
-        footer_template   = app.config.get('FOOTER_TEMPLATE'),
-        welcome_message   = app.config.get('WELCOME_MESSAGE'),
-        navbar_brand_text = app.config.get('NAVBAR_BRAND_TEXT'),
-        enable_vault_integration = False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True
+        footer_template=app.config.get('FOOTER_TEMPLATE'),
+        welcome_message=app.config.get('WELCOME_MESSAGE'),
+        navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
+        enable_vault_integration=False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True,
+        external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
+        enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get('FEATURE_ADVANCED_MENU') else "no",
+        enable_update_deployment=app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get(
+                                   'FEATURE_UPDATE_DEPLOYMENT') else "no",
+        hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
+                                    'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
     )
 
 
 db.init_app(app)
 migrate.init_app(app, db)
 alembic.init_app(app, run_mkdir=False)
+tosca.init_app(app)
+
+if app.config.get("ENABLE_VAULT_INTEGRATION"):
+    vault.init_app(app)
+
+from app.errors.handlers import errors_bp
+app.register_blueprint(errors_bp)
 
 iam_base_url = app.config['IAM_BASE_URL']
 iam_token_url = iam_base_url + '/token'
@@ -63,6 +85,19 @@ iam_blueprint = OAuth2ConsumerBlueprint(
 )
 app.register_blueprint(iam_blueprint, url_prefix="/login")
 
+from app.users.users import users_bp
+app.register_blueprint(users_bp, url_prefix="/users")
+
+from app.deployments.deployments import deployments_bp
+app.register_blueprint(deployments_bp, url_prefix="/deployments" )
+
+from app.providers.providers import providers_bp
+app.register_blueprint(providers_bp, url_prefix="/providers")
+
+if app.config.get("ENABLE_VAULT_INTEGRATION"):
+    from app.vault.vault import vault_bp
+    app.register_blueprint(vault_bp, url_prefix="/vault")
+
 mail = Mail(app)
 
 # logging
@@ -75,8 +110,7 @@ if not isinstance(numeric_level, int):
 
 logging.basicConfig(level=numeric_level)
 
-from app import models
-from app import routes, errors
+from app import routes
 
 # check if database exists
 engine = db.get_engine(app)

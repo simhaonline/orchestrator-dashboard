@@ -85,7 +85,7 @@
             <p>
             SSH key pair will be created from scratch. The private key will be stored on vault, while the public key will be stored on the Dashboard database, allowing the access to Galaxy.
             </p>
-            <button id="createSSHKeyPair" class="btn btn-outline-success" onclick="location.href='{{ url_for('create_ssh_key', subject=session['userid']) }}'">
+            <button id="createSSHKeyPair" class="btn btn-outline-success" onclick="location.href='{{ url_for('vault_bp.create_ssh_key', subject=session['userid']) }}'">
                 <span class="fas fa-plus mr-2"></span> Create new SSH key pair
             </button>
             <br>

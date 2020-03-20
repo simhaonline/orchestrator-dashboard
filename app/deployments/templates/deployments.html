@@ -29,7 +29,7 @@
             </div>
             <div class="col-md-6 text-right">
               <!-- Button -->
-              <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('showdeployments') }}"'><span class='fas fa-sync mr-2'></span>Refresh</button>
+              <button type=button class='btn btn-outline-secondary' onclick='location.href="{{ url_for('deployments_bp.showdeployments') }}"'><span class='fas fa-sync mr-2'></span>Refresh</button>
               <button type=button class='btn btn-primary' onclick='location.href="{{ url_for('home') }}"'><span class='fas fa-plus mr-2'></span>New deployment</button>
             </div>
           </div> <!-- / .row -->
@@ -61,7 +61,7 @@
         {% endif %}
         <tr>
             <td>{{deployment.description}}</td>
-            <td><strong><a href="{{ url_for('depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
+            <td><strong><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
             <td>
                 {% if "COMPLETE" in deployment.status %}
                 <span class="badge badge-success"/>
@@ -80,7 +80,7 @@
             <td>
               <div class="btn-group">
                 <!-- DETAILS -->
-               <a class="btn btn-info" href="{{ url_for('depoutput', depid=deployment.uuid) }}"><span class="fas fa-bars mr-2 grey-text"></span>Details</a>
+               <a class="btn btn-info" href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"><span class="fas fa-bars mr-2 grey-text"></span>Details</a>
                 <button type="button" class="btn btn-info dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
                   <span class="sr-only">Toggle Dropdown</span>
                 </button>
@@ -89,16 +89,16 @@
                     <a class="dropdown-item" href="#delete_confirm_{{deployment.uuid}}" data-toggle="modal" data-backdrop="static" data-keyboard="false"
                        data-target="#delete_confirm_{{deployment.uuid}}"><span class="fas fa-trash-alt mr-2"></span>Delete</a>
                   {% endif %}
-                  <a class="dropdown-item" href="{{ url_for('deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
-                  {% if session['enable_update_deployment'] == "yes" and deployment.updatable == 1 %}
-                    <a class="dropdown-item" href="{{ url_for('depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
+                  <a class="dropdown-item" href="{{ url_for('deployments_bp.deptemplate', depid=deployment.uuid) }}"><span class="fas fa-search mr-2 grey-text"></span>Show template</a>
+                  {% if enable_update_deployment == "yes" and deployment.updatable == 1 %}
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.depupdate', depid=deployment.uuid) }}"><span class="fas fa-plus mr-2 grey-text"></span>Update</a>
                   {% endif %}
-                  <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deplog', physicalId=deployment.physicalId) }}">
+                  <a class="dropdown-item {% if deployment.physicalId is not defined %}disabled{% endif %}" href="{{ url_for('deployments_bp.deplog', physicalId=deployment.physicalId) }}">
                       <span class="fas fa-file-alt mr-2 grey-text"></span>Log</a>
                   {% if deployment.locked == 0 %}
-                    <a class="dropdown-item" href="{{ url_for('lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.lockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock mr-2"></span>Lock</a>
                   {% else %}
-                    <a class="dropdown-item" href="{{ url_for('unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
+                    <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
                   {% endif %}
                 </div>
               </div>
@@ -117,7 +117,7 @@
               </div>
               <div class="modal-footer">
                 <a id="cancelBtn" class="btn btn-primary text-white" role="button" data-dismiss="modal">Cancel</a>
-                <a id="deleteBtn" class="btn btn-danger" role="button" href="{{ url_for("depdel", depid=deployment.uuid) }}">Delete deployment</a>
+                <a id="deleteBtn" class="btn btn-danger" role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}">Delete deployment</a>
               </div>
             </div>
           </div>
@@ -146,9 +146,9 @@ $(document).ready(function () {
                 "targets"  : 'no-sort',
                 "orderable": false,
              },
-             {% if session['hidden_deployment_columns'] != '' %}
+             {% if hidden_deployment_columns != '' %}
              {
-                "targets": [{{session['hidden_deployment_columns']}}],
+                "targets": [{{hidden_deployment_columns}}],
                 "visible": false,
              },
              {% endif %}

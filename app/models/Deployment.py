@@ -2,8 +2,23 @@ from app import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
+class DeploymentMixin(object):
 
-class Deployment(db.Model):
+    @classmethod
+    def update_deployment(cls, depuuid, data):
+        cls.query.filter_by(uuid=depuuid).update(data)
+        db.session.commit()
+
+    @classmethod
+    def get_user_deployments(cls, user_sub):
+        return cls.query.filter_by(sub=user_sub).all()
+
+    @classmethod
+    def get_deployment(cls, uuid):
+        return cls.query.get(uuid)
+
+
+class Deployment(DeploymentMixin, db.Model):
     __tablename__ = 'deployments'
     uuid = db.Column(db.String(36), primary_key=True)
     creation_time = db.Column(db.DateTime, nullable=True)
@@ -35,22 +50,3 @@ class Deployment(db.Model):
 
     def __repr__(self):
         return '<Deployment {}>'.format(self.uuid)
-
-
-class User(db.Model):
-    __tablename__ = 'users'
-    sub = db.Column(db.String(36), primary_key=True)
-    name = db.Column(db.String(128), nullable=True)
-    username = db.Column(db.String(64), nullable=False)
-    given_name = db.Column(db.String(64), nullable=True)
-    family_name = db.Column(db.String(64), nullable=True)
-    email = db.Column(db.String(64), nullable=False)
-    organisation_name = db.Column(db.String(64), nullable=True)
-    picture = db.Column(db.String(128), nullable=True)
-    role = db.Column(db.String(32), nullable=False, default='user')
-    sshkey = db.Column(db.Text, nullable=True)
-    active = db.Column(db.Integer, nullable=False, default='1')
-    deployments = relationship("Deployment", back_populates="user")
-
-    def __repr__(self):
-        return '<User {}>'.format(self.sub) 

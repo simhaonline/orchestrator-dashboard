@@ -1,4 +1,4 @@
-import requests, json
+import requests
 from flask import session
 
 
@@ -8,10 +8,10 @@ def get_sla_extra_info(access_token, service_id, cmdb_url):
     response = requests.get(url, headers=headers, timeout=20)
     response.raise_for_status()
 
-    service_type=response.json()['data']['service_type']
-    sitename=response.json()['data']['sitename']
-    endpoint=response.json()['data'].get('endpoint')
-    iam_enabled=response.json()['data'].get('iam_enabled')
+    service_type = response.json()['data']['service_type']
+    sitename = response.json()['data']['sitename']
+    endpoint = response.json()['data'].get('endpoint')
+    iam_enabled = response.json()['data'].get('iam_enabled')
     if 'properties' in response.json()['data']:
         if 'gpu_support' in response.json()['data']['properties']:
             service_type = service_type + " (gpu_support: " + \
@@ -26,7 +26,7 @@ def is_enabling_services(deployment_type, service_type):
         return True
 
     if deployment_type == "CLOUD":
-        return True if service_type in [ "org.openstack.nova", "com.amazonaws.ec2" ] else False
+        return True if service_type in ["org.openstack.nova", "com.amazonaws.ec2"] else False
     elif deployment_type == "MARATHON":
         return True if "eu.indigo-datacloud.marathon" in service_type else False
     elif deployment_type == "CHRONOS":

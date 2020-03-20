@@ -34,8 +34,8 @@
             </div>
             <div class="col-md-6 text-right">
               <!-- Button -->
-              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('show_deployments', subject=user.sub) }}'"><span class="fas fa-sync"></span> Refresh</button>
-              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'"><span class="fas fa-sync"></span> Refresh</button>
+              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('users_bp.show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
             </div>
           </div> <!-- / .row -->
         </div>
@@ -81,8 +81,8 @@
         <td>{{deployment.provider_name}}</td>
         <td>{{deployment.physicalId}}</td>
         <td>{{deployment.endpoint}}</td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
-        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}"'><i class='fas fa-folder-open mr-2 grey-text' aria-hidden='true' title="Show outputs"></i>Details</button></td>
+        <td style='text-align:center'><button class='btn' onclick='location.href="{{ url_for('deployments_bp.deptemplatedb', depid=deployment.uuid) }}"'><i class='fas fa-search mr-2 grey-text' aria-hidden='true' title="Show template"></i>Show template</button></td>
         <td style='text-align:center'>
         {% if deployment.remote == 1 %}
             <i class='fas fa-cloud mr-2 grey-text' aria-hidden='true' title="Remote deployment">

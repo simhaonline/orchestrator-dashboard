@@ -15,7 +15,7 @@
             </div>
             <div class="col-md-6 text-right">
               <!-- Button -->
-              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for("getslas") }}'"><span class="fas fa-sync"></span> Refresh</button>
+              <button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for("providers_bp.getslas") }}'"><span class="fas fa-sync"></span> Refresh</button>
             </div>
           </div> <!-- / .row -->
         </div>
@@ -93,7 +93,7 @@ $(document).ready(function () {
      var provider = button.data('whatever')
      var modal = $(this)
      if ( event.relatedTarget.id == "getInfoBtn") {
-         modal.find('.modal-body').html('Loading...').load("{{url_for('get_monitoring_info')}}" + "?service_id=" + service_id + "&provider=" + provider);
+         modal.find('.modal-body').html('Loading...').load("{{url_for('providers_bp.get_monitoring_info')}}" + "?service_id=" + service_id + "&provider=" + provider);
      }
   });
 });

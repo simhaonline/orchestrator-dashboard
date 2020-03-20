@@ -60,8 +60,8 @@
         <td>{{user.organisation_name}}</td>
         <td>{{user.email}}</td>
         <td>{{user.role}}</td>
-        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_user', subject=user.sub) }}'"><i class="fas fa-edit mr-2 grey-text" aria-hidden="true"></i>Details</button></td>
-        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('show_deployments', subject=user.sub) }}'"><i class="fas fa-server mr-2 grey-text" aria-hidden="true"></i>Deployments</button></td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('users_bp.show_user', subject=user.sub) }}'"><i class="fas fa-edit mr-2 grey-text" aria-hidden="true"></i>Details</button></td>
+        <td style="text-align:center"><button class="btn" onclick="location.href='{{ url_for('users_bp.show_deployments', subject=user.sub) }}'"><i class="fas fa-server mr-2 grey-text" aria-hidden="true"></i>Deployments</button></td>
     </tr>
     {% endfor %}
   </tbody>

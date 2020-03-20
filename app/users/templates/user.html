@@ -20,7 +20,7 @@
 
 
 
-    <form id="user_data" action="{{ url_for('show_user', subject=user.sub) }}" method="post">
+    <form id="user_data" action="{{ url_for('users_bp.show_user', subject=user.sub) }}" method="post">
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
@@ -32,7 +32,7 @@
             <div class="col-md-6 text-right">
               <!-- Button -->
               <button type="submit" class="btn btn-small btn-primary"><span class="fas fa-download mr-2"></span> Update</button>
-              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
+              <button type=button class="btn btn-small btn-outline-secondary" onclick="location.href='{{ url_for('users_bp.show_users') }}'"><span class="fas fa-arrow-left mr-2"></span> Back</button>
             </div>
           </div> <!-- / .row -->
         </div>

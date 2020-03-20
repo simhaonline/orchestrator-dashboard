@@ -16,10 +16,7 @@ orchestratorConf = {
   'cmdb_url': app.config.get('CMDB_URL'),
   'slam_url': tempSlamUrl + "/rest/slam",
   'im_url': app.config.get('IM_URL'),
-  'monitoring_url': app.config.get('MONITORING_URL')
+  'monitoring_url': app.config.get('MONITORING_URL'),
+  'vault_url' : app.config.get('VAULT_URL')
 }
 
-external_links = app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else []
-enable_advanced_menu = app.config.get('FEATURE_ADVANCED_MENU') if app.config.get('FEATURE_ADVANCED_MENU') else "no"
-enable_update_deployment = app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get('FEATURE_UPDATE_DEPLOYMENT') else "no"
-hidden_deployment_columns = app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
