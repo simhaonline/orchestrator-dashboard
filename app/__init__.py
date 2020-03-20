@@ -122,15 +122,5 @@ except:
 finally:
     s.close()
 
-
-"""
-swift = Swift("xJCq7DlulWI5fTOLWAQL0S5+BkFScTlPIfPv5ni0engfSdwxXzYPqzuLc7UMGmQlTOdt/r0mKzPE0TGjaWR68HJPM+fh4sGQxpa2vxgeZzJd0/i8ZBLnG5Ojev1O8Lh3fEYxEpBIrDbIG/FMppWmGdJnMeoz2hCzX2VYH1lkn6o=",
-              "77e774c8-6a99-11ea-bc55-0242ac130003")
-tk = swift.setbase("77e774c8-6a99-11ea-bc55-0242ac130003")
-tk = swift._pack("OS§https://cloud.recas.ba.infn.it:5000§3§portale_fisica_medica§syGLyXPnA7vQRyeB§NextMR-2§Fisica-Medica")
-logging.debug(tk)
-"""
-
-
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

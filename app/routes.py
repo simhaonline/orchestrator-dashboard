@@ -752,6 +752,36 @@ def add_sla_to_template(template, sla_id):
     return template
 
 
+@app.route('/createswifttoken', methods=['GET', 'POST'])
+@authorized_with_valid_token
+@only_for_admin
+def createswifttoken():
+    if request.method == 'POST':
+        logging.debug("Form data: " + json.dumps(request.form.to_dict()))
+        form_data = request.form.to_dict()
+        swift_a = form_data["swiftauthurl"] if "swiftauthurl" in form_data else None
+        swift_v = form_data["swiftauthversion"] if "swiftauthversion" in form_data else None
+        swift_u = form_data["swiftuser"] if "swiftuser" in form_data else None
+        swift_k = form_data["swiftkey"] if "swiftkey" in form_data else None
+        swift_t = form_data["swifttenant"] if "swifttenant" in form_data else None
+        swift_b = form_data["swifcontainer"] if "swifcontainer" in form_data else None
+
+        if swift_a and swift_v and swift_u and swift_k and swift_t and swift_b:
+            swift = Swift()
+            t = "OS" + "§" \
+                + swift_a + "§" \
+                + swift_v + "§" \
+                + swift_u + "§" \
+                + swift_k + "§" \
+                + swift_t + "§" \
+                + swift_b
+            token = swift._pack(t)
+            return render_template('createswifttoken.html', token=token)
+        else:
+            flash("All fields must be filled! Cannot create swift token.")
+    return render_template('createswifttoken.html')
+
+
 @app.route('/submit', methods=['POST'])
 @authorized_with_valid_token
 def createdep():
@@ -809,7 +839,7 @@ def createdep():
         if swift_autouuid:
             swift_uuid = inputs[swift_autouuid] = str(uuid_generator.uuid1())
 
-        swift = Swift(inputs[swift_token], "77e774c8-6a99-11ea-bc55-0242ac130003")
+        swift = Swift(token=inputs[swift_token])
         for k, v in inputs.items():
             v = swift.mapvalue(v)
             if v is not None:

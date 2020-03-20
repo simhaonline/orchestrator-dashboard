@@ -6,7 +6,6 @@ from base64 import b64encode
 from Cryptodome.Cipher import AES
 from Cryptodome.Random import get_random_bytes
 from Cryptodome.Util.Padding import pad, unpad
-from Cryptodome.Util.number import bytes_to_long
 
 from swiftclient import Connection
 
@@ -15,16 +14,16 @@ from app import utils
 
 class Swift:
 
-
-    def __init__(self, token, base="OrchestratorDashboard"):
+    def __init__(self, token=None, base="77e774c8-6a99-11ea-bc55-0242ac130003"):
+        self.emptyMd5 = "d41d8cd98f00b204e9800998ecf8427e"
         self.base = base
         self.private_key = hashlib.sha256(self.base.encode("utf-8")).digest()
-        self.bs = 16
-        self._split(token)
         self.token = token
+        if token is not None:
+            self._split(token)
+        else:
+            self._clear()
         self.connection = None
-
-        self.emptyMd5 = "d41d8cd98f00b204e9800998ecf8427e"
 
     def getconnection(self):
         if self.connection is None:
@@ -59,7 +58,6 @@ class Swift:
             if len(base) >= 8:
                 self.base = base
                 self.private_key = hashlib.sha256(self.base.encode("utf-8")).digest()
-                self.cipher = AES.new(self.private_key, AES.MODE_ECB)
                 if self.token is not None:
                     t = "OS" + "§" \
                         + self.authurl + "§" \
@@ -69,7 +67,6 @@ class Swift:
                         + self.tenant + "§" \
                         + self.basecontainername
                     self.token = self._pack(t)
-                self.connection = None
                 return self.token
         raise ValueError("Invalid key.")
 
@@ -89,24 +86,24 @@ class Swift:
 
     def createobject(self, containername, objectname, contents):
         return self.getconnection().put_object(container=containername,
-                        obj=objectname,
-                        contents=contents,
-                        content_type='application/octet-stream')
+                                               obj=objectname,
+                                               contents=contents,
+                                               content_type='application/octet-stream')
 
     def removeobject(self, containername, objectname):
         self.getconnection().delete_object(container=containername,
-                                                  obj=objectname)
+                                           obj=objectname)
 
     def _pack(self, data):
-        iv = get_random_bytes(self.bs)
-        self.cipher = AES.new(self.private_key, AES.MODE_CBC, iv)
-        return b64encode(iv + self.cipher.encrypt(pad(data.encode('utf-8'),
+        iv = get_random_bytes(AES.block_size)
+        cipher = AES.new(self.private_key, AES.MODE_CBC, iv)
+        return b64encode(iv + cipher.encrypt(pad(data.encode('utf-8'),
                                                       AES.block_size))).decode('utf-8')
 
     def _unpack(self, data):
         raw = b64decode(data)
-        self.cipher = AES.new(self.private_key, AES.MODE_CBC, raw[:AES.block_size])
-        return unpad(self.cipher.decrypt(raw[AES.block_size:]), AES.block_size).decode('utf-8')
+        cipher = AES.new(self.private_key, AES.MODE_CBC, raw[:AES.block_size])
+        return unpad(cipher.decrypt(raw[AES.block_size:]), AES.block_size).decode('utf-8')
 
     def _split(self, settings):
         self.mapped = {}
@@ -125,19 +122,19 @@ class Swift:
 
         return self.mapped
 
+    def _clear(self):
+        self.mapped = {}
+        self.authurl = self.mapped["swift_a"] = None  # Auth url
+        self.version = self.mapped["swift_v"] = None  # Auth version
+        self.user = self.mapped["swift_u"] = None  # user
+        self.key = self.mapped["swift_k"] = None  # key
+        self.tenant = self.mapped["swift_t"] = None  # tenant
+        self.basecontainername = self.mapped["swift_c"] = None  # base container name
 
     def md5hash(self, f, offset=0, length=0, buffer_size=2097152):
-        """ Generate MD5 hash for specified file (chunck).
-        :param f: file path or file object.
-        :param offset: offset.
-        :param length: length.
-        :param buffer_size: buffer size. Defaults to 65536.
-        :return: MD5 hash string
-        """
         if isinstance(f, str):
             with open(f, 'rb') as o:
                 return self.md5hash(o, offset, length, buffer_size)
-
         hasher = hashlib.md5()
         if offset > 0:  # chunked
             f.seek(offset)
