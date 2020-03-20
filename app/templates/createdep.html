@@ -49,14 +49,14 @@
                 <strong>Description:</strong> {{template['description']}}
             </div>
 
-            <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
+            <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Instance description</label>
                     <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value="" required>
                 </div>
                 {% include 'config_form.html' %}
-            <button type="submit" class="btn btn-success submitBtn">Submit</button>
-            <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home') }}'">
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home') }}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
             </form>
         </div>

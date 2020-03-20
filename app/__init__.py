@@ -13,6 +13,8 @@ from flask_migrate import Migrate, upgrade
 import logging
 
 # db variable initialization
+from app.swift import Swift
+
 db: SQLAlchemy = SQLAlchemy()
 
 # initialize Migrate
@@ -28,7 +30,7 @@ app.config.from_object('config.default')
 app.config.from_json('config.json')
 
 profile = app.config.get('CONFIGURATION_PROFILE')
-if profile != 'default':
+if profile is not None and profile != 'default':
     app.config.from_object('config.' + profile)
 
 
@@ -83,9 +85,9 @@ engine = db.get_engine(app)
 if not database_exists(engine.url):  # Checks for the first time
     create_database(engine.url)  # Create new DB
     if database_exists(engine.url):
-        app.logger.debug("New database created")
+        logging.debug("New database created")
     else:
-        app.logger.debug("Cannot create database")
+        logging.debug("Cannot create database")
         sys.exit()
 else:
     # for compatibility with old non-orm version
@@ -119,6 +121,16 @@ except:
     app.ip = '127.0.0.1'
 finally:
     s.close()
+
+
+"""
+swift = Swift("xJCq7DlulWI5fTOLWAQL0S5+BkFScTlPIfPv5ni0engfSdwxXzYPqzuLc7UMGmQlTOdt/r0mKzPE0TGjaWR68HJPM+fh4sGQxpa2vxgeZzJd0/i8ZBLnG5Ojev1O8Lh3fEYxEpBIrDbIG/FMppWmGdJnMeoz2hCzX2VYH1lkn6o=",
+              "77e774c8-6a99-11ea-bc55-0242ac130003")
+tk = swift.setbase("77e774c8-6a99-11ea-bc55-0242ac130003")
+tk = swift._pack("OS§https://cloud.recas.ba.infn.it:5000§3§portale_fisica_medica§syGLyXPnA7vQRyeB§NextMR-2§Fisica-Medica")
+logging.debug(tk)
+"""
+
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0')

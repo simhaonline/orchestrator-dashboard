@@ -1,8 +1,9 @@
-from app import app, iam_blueprint, sla as sla, mail, settings, utils
+from app import app, iam_blueprint, sla as sla, mail, settings, utils, Swift
 from markupsafe import Markup
 from app import db
 from app.models import Deployment, User
 from werkzeug.exceptions import Forbidden
+from werkzeug.utils import secure_filename
 from flask import json, render_template, request, redirect, url_for, flash, session, make_response
 from flask_mail import Message
 import requests
@@ -10,11 +11,11 @@ import json
 import datetime
 import yaml
 import io
-import linecache
-import sys
 import base64
 import struct
 import binascii
+import logging
+import os
 from functools import wraps
 from packaging import version
 from dateutil import parser
@@ -34,15 +35,15 @@ if not issuer.endswith('/'):
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
 
 toscaTemplates = utils.loadtoscatemplates(settings.toscaDir)
-toscaInfo = utils.extractalltoscainfo(settings.toscaDir,
+toscaInfo = utils.extractalltoscainfo(toscaTemplates,
+                                      settings.toscaDir,
                                       settings.toscaParamsDir,
-                                      toscaTemplates,
                                       settings.toscaMetadataDir)
 
-app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
-app.logger.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
-app.logger.debug("FEATURE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
-app.logger.debug("FEATURE_UPDATE_DEPLOYMENT: " + str(settings.enable_update_deployment))
+logging.debug("TOSCA INFO: " + json.dumps(toscaInfo))
+logging.debug("EXTERNAL_LINKS: " + json.dumps(settings.external_links))
+logging.debug("FEATURE_ADVANCED_MENU: " + str(settings.enable_advanced_menu))
+logging.debug("FEATURE_UPDATE_DEPLOYMENT: " + str(settings.enable_update_deployment))
 
 
 # ______________________________________
@@ -79,7 +80,7 @@ def before_request_checks():
 
 def validate_configuration():
     if not settings.orchestratorConf.get('im_url'):
-        app.logger.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
+        logging.debug("Trying to (re)load config from Orchestrator: " + json.dumps(settings.orchestratorConf))
         access_token = iam_blueprint.session.token['access_token']
         configuration = utils.getorchestratorconfiguration(settings.orchestratorUrl, access_token)
         settings.orchestratorConf = configuration
@@ -93,7 +94,7 @@ def authorized_with_valid_token(f):
             return redirect(url_for('login'))
 
         if iam_blueprint.session.token['expires_in'] < 60:
-            app.logger.debug("Force refresh token")
+            logging.debug("Force refresh token")
             iam_blueprint.session.get('/userinfo')
 
         validate_configuration()
@@ -239,7 +240,7 @@ def getslas():
     try:
         access_token = iam_blueprint.session.token['access_token']
         slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'], settings.orchestratorConf['cmdb_url'])
-        app.logger.debug("SLAs: {}".format(slas))
+        logging.debug("SLAs: {}".format(slas))
 
     except Exception as e:
         flash("Error retrieving SLAs list: \n" + str(e), 'warning')
@@ -329,7 +330,7 @@ def updatedeploymentsstatus(deployments, userid):
 
             deps.append(dep)
         else:
-            app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+            logging.info("Deployment with uuid:{} not found!".format(uuid))
 
             # retrieve template
             access_token = iam_blueprint.session.token['access_token']
@@ -391,16 +392,6 @@ def updatedeploymentsstatus(deployments, userid):
     return result
 
 
-def logexception(err):
-    exc_type, exc_obj, tb = sys.exc_info()
-    f = tb.tb_frame
-    lineno = tb.tb_lineno
-    filename = f.f_code.co_filename
-    linecache.checkcache(filename)
-    line = linecache.getline(filename, lineno, f.f_globals)
-    app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
-
-
 def check_template_access(allowed_groups, user_groups):
     # check intersection of user groups with user membership
     if (set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
@@ -422,7 +413,7 @@ def home():
 
         if settings.iamGroups:
             if not set(settings.iamGroups).issubset(user_groups):
-                app.logger.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
+                logging.debug("No match on group membership. User group membership: " + json.dumps(user_groups))
                 message = Markup(
                     'You need to be a member of one (or more) of these IAM groups: {0}. <br>' +
                     'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
@@ -484,7 +475,7 @@ def showdeployments():
         deployments = response.json()["content"]
         result = updatedeploymentsstatus(deployments, session['userid'])
         deployments = result['deployments']
-        app.logger.debug("Deployments: " + str(deployments))
+        logging.debug("Deployments: " + str(deployments))
 
         deployments_uuid_array = result['iids']
         session['deployments_uuid_array'] = deployments_uuid_array
@@ -572,7 +563,7 @@ def deplog(physicalId=None):
     access_token = iam_blueprint.session.token['access_token']
     headers = {'Authorization': 'id = im; type = InfrastructureManager; token = %s;' % access_token}
 
-    app.logger.debug("Configuration: " + json.dumps(settings.orchestratorConf))
+    logging.debug("Configuration: " + json.dumps(settings.orchestratorConf))
 
     url = settings.orchestratorConf['im_url'] + "/infrastructures/" + physicalId + "/contmsg"
     response = requests.get(url, headers=headers)
@@ -650,7 +641,7 @@ def updatedep():
 
     form_data = request.form.to_dict()
 
-    app.logger.debug("Form data: " + json.dumps(form_data))
+    logging.debug("Form data: " + json.dumps(form_data))
 
     template_text = form_data['template']
     template = yaml.full_load(io.StringIO(template_text))
@@ -682,7 +673,7 @@ def updatedep():
     if additionaldescription is not None:
         inputs['additional_description'] = additionaldescription
 
-    app.logger.debug("Parameters: " + json.dumps(inputs))
+    logging.debug("Parameters: " + json.dumps(inputs))
 
     payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
                "parameters": inputs}
@@ -756,7 +747,7 @@ def add_sla_to_template(template, sla_id):
     template['topology_template']['policies'] = [
         {"deploy_on_specific_site": {"type": tosca_sla_placement_type, "properties": {"sla_id": sla_id}}}]
 
-    app.logger.debug(yaml.dump(template, default_flow_style=False))
+    logging.debug(yaml.dump(template, default_flow_style=False))
 
     return template
 
@@ -764,38 +755,108 @@ def add_sla_to_template(template, sla_id):
 @app.route('/submit', methods=['POST'])
 @authorized_with_valid_token
 def createdep():
+
     access_token = iam_blueprint.session.token['access_token']
+    selected_template = request.args.get('template')
+    source_template = toscaInfo[selected_template]
 
-    app.logger.debug("Form data: " + json.dumps(request.form.to_dict()))
+    logging.debug("Form data: " + json.dumps(request.form.to_dict()))
 
-    with io.open(settings.toscaDir + request.args.get('template')) as stream:
+    with io.open(os.path.join(settings.toscaDir, selected_template)) as stream:
         template = yaml.full_load(stream)
         # rewind file
         stream.seek(0)
         template_text = stream.read()
 
-        form_data = request.form.to_dict()
+    form_data = request.form.to_dict()
 
-        params = {}
+    params = {}
 
-        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data else 0
-        params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
-        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
-        params['providerTimeoutMins'] = form_data[
-            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
-            'PROVIDER_TIMEOUT']
-        params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-        params['callback'] = app.config['CALLBACK_URL']
+    keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data else 0
+    params['keepLastAttempt'] = 'true' if 'extra_opts.keepLastAttempt' in form_data else 'false'
+    feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else 0
+    params['providerTimeoutMins'] = form_data[
+        'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+        'PROVIDER_TIMEOUT']
+    params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
+    params['callback'] = app.config['CALLBACK_URL']
 
-        if form_data['extra_opts.schedtype'].lower() == "man":
-            template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
+    if form_data['extra_opts.schedtype'].lower() == "man":
+        template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
+    else:
+        remove_sla_from_template(template)
+
+    additionaldescription = form_data['additional_description']
+
+    inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
+
+    doprocess = True
+    swiftprocess = False
+
+    # process swift file upload if present
+    stinputs = source_template['inputs']
+    swift_filename = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
+                                            else None) == 'swift_upload', request.files), None)
+    swift_token = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
+                                         else None) == 'swift_token', inputs), None)
+    swift = None
+
+    if swift_filename and swift_token:
+
+        swift_autouuid = next(filter(lambda x: (stinputs[x]['type'] if x in stinputs
+                                                else None) == 'swift_autouuid', inputs), None)
+        swift_uuid = None
+        if swift_autouuid:
+            swift_uuid = inputs[swift_autouuid] = str(uuid_generator.uuid1())
+
+        swift = Swift(inputs[swift_token], "77e774c8-6a99-11ea-bc55-0242ac130003")
+        for k, v in inputs.items():
+            v = swift.mapvalue(v)
+            if v is not None:
+                inputs[k] = v
+
+        file = request.files[swift_filename]
+        if file:
+            upload_folder = app.config['UPLOAD_FOLDER']
+            if swift_uuid is not None:
+                upload_folder = os.path.join(upload_folder, swift_uuid)
+            filename = secure_filename(file.filename)
+            fullfilename = os.path.join(upload_folder, filename )
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            file.save(fullfilename)
+
+            if swift_filename not in inputs:
+                inputs[swift_filename] = file.filename
+
+            containername = basecontainername = swift.basecontainername
+            containers  = swift.getownedcontainers()
+            basecontainer = next(filter(lambda x: x['name'] == basecontainername, containers), None)
+            if basecontainer is None:
+                swift.createcontainer(basecontainername)
+
+            if swift_uuid is not None:
+                containername = basecontainername + "/" + swift_uuid
+
+            with open(fullfilename, 'rb') as f:
+                calchash = swift.md5hash(f)
+            with open(fullfilename, 'rb') as f:
+                hash = swift.createobject(containername, filename, contents=f.read())
+
+            if hash is not None and hash != swift.emptyMd5:
+                swiftprocess = True
+
+            os.remove(fullfilename)
+            os.rmdir(upload_folder)
+
+            if calchash != hash:
+                doprocess = False
+                flash("Wrong swift file checksum!")
         else:
-            remove_sla_from_template(template)
+            doprocess = False
+            flash("Missing file object!")
 
-        additionaldescription = form_data['additional_description']
-
-        inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.")}
-
+    if doprocess:
         storage_encryption = 0
         vault_secret_uuid = ''
         vault_secret_key = ''
@@ -808,14 +869,14 @@ def createdep():
             vault_secret_uuid = str(uuid_generator.uuid4())
             if 'vault_secret_key' in inputs:
                 vault_secret_key = inputs['vault_secret_key']
-            app.logger.debug("Storage encryption enabled, appending wrapping token.")
+            logging.debug("Storage encryption enabled, appending wrapping token.")
             inputs['vault_wrapping_token'] = create_vault_wrapping_token(access_token)
             inputs['vault_secret_path'] = session['userid'] + '/' + vault_secret_uuid
 
         if 'instance_key_pub' in inputs and inputs['instance_key_pub'] == '':
             inputs['instance_key_pub'] = get_ssh_pub_key()
 
-        app.logger.debug("Parameters: " + json.dumps(inputs))
+        logging.debug("Parameters: " + json.dumps(inputs))
 
         payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
                    "parameters": inputs}
@@ -825,51 +886,55 @@ def createdep():
         elastic = utils.eleasticdeployment(template)
         updatable = utils.updatabledeployment(template)
 
-    url = settings.orchestratorUrl + "/deployments/"
-    headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-    response = requests.post(url, json=payload, headers=headers)
+        url = settings.orchestratorUrl + "/deployments/"
+        headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
+        response = requests.post(url, json=payload, headers=headers)
 
-    if not response.ok:
-        flash("Error submitting deployment: \n" + response.text)
-    else:
-        # store data into database
-        rs_json = json.loads(response.text)
-        uuid = rs_json['uuid']
-        deployment = get_deployment(uuid)
-        if deployment is None:
-
-            vphid = rs_json['physicalId'] if 'physicalId' in rs_json else ''
-            providername = rs_json['cloudProviderName'] if 'cloudProviderName' in rs_json else ''
-
-            deployment = Deployment(uuid=uuid,
-                                    creation_time=rs_json['creationTime'],
-                                    update_time=rs_json['updateTime'],
-                                    physicalId=vphid,
-                                    description=additionaldescription,
-                                    status=rs_json['status'],
-                                    outputs=json.dumps(rs_json['outputs']),
-                                    task=rs_json['task'],
-                                    links=json.dumps(rs_json['links']),
-                                    sub=rs_json['createdBy']['subject'],
-                                    template=template_text,
-                                    inputs=json.dumps(inputs),
-                                    params=json.dumps(params),
-                                    provider_name=providername,
-                                    endpoint='',
-                                    feedback_required=feedback_required,
-                                    keep_last_attempt=keep_last_attempt,
-                                    remote=1,
-                                    issuer=rs_json['createdBy']['issuer'],
-                                    storage_encryption=storage_encryption,
-                                    vault_secret_uuid=vault_secret_uuid,
-                                    vault_secret_key=vault_secret_key,
-                                    elastic=elastic,
-                                    updatable=updatable)
-            db.session.add(deployment)
-            db.session.commit()
-
+        if not response.ok:
+            flash("Error submitting deployment: \n" + response.text)
+            doprocess = False
         else:
-            flash("Deployment with uuid:{} is already in the database!".format(uuid))
+            # store data into database
+            rs_json = json.loads(response.text)
+            uuid = rs_json['uuid']
+            deployment = get_deployment(uuid)
+            if deployment is None:
+
+                vphid = rs_json['physicalId'] if 'physicalId' in rs_json else ''
+                providername = rs_json['cloudProviderName'] if 'cloudProviderName' in rs_json else ''
+
+                deployment = Deployment(uuid=uuid,
+                                        creation_time=rs_json['creationTime'],
+                                        update_time=rs_json['updateTime'],
+                                        physicalId=vphid,
+                                        description=additionaldescription,
+                                        status=rs_json['status'],
+                                        outputs=json.dumps(rs_json['outputs']),
+                                        task=rs_json['task'],
+                                        links=json.dumps(rs_json['links']),
+                                        sub=rs_json['createdBy']['subject'],
+                                        template=template_text,
+                                        inputs=json.dumps(inputs),
+                                        params=json.dumps(params),
+                                        provider_name=providername,
+                                        endpoint='',
+                                        feedback_required=feedback_required,
+                                        keep_last_attempt=keep_last_attempt,
+                                        remote=1,
+                                        issuer=rs_json['createdBy']['issuer'],
+                                        storage_encryption=storage_encryption,
+                                        vault_secret_uuid=vault_secret_uuid,
+                                        vault_secret_key=vault_secret_key,
+                                        elastic=elastic,
+                                        updatable=updatable)
+                db.session.add(deployment)
+                db.session.commit()
+
+            else:
+                flash("Deployment with uuid:{} is already in the database!".format(uuid))
+
+    if doprocess == False and swiftprocess == True:
+        swift.removeobject(containername, filename)
 
     return redirect(url_for('showdeployments'))
 
@@ -896,7 +961,7 @@ def logout():
 @app.route('/callback', methods=['POST'])
 def callback():
     payload = request.get_json()
-    app.logger.info("Callback payload: " + json.dumps(payload))
+    logging.info("Callback payload: " + json.dumps(payload))
 
     status = payload['status']
     task = payload['task']
@@ -928,7 +993,7 @@ def callback():
             db.session.add(dep)
             db.session.commit()
     else:
-        app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+        logging.info("Deployment with uuid:{} not found!".format(uuid))
 
     # send email to user
     mail_sender = app.config.get('MAIL_SENDER')
@@ -941,7 +1006,7 @@ def callback():
             try:
                 mail.send(msg)
             except Exception as error:
-                logexception("sending email:".format(error))
+                utils.logexception("sending email:".format(error))
 
         if status == 'CREATE_FAILED':
             msg = Message("Deployment failed",
@@ -951,7 +1016,7 @@ def callback():
             try:
                 mail.send(msg)
             except Exception as error:
-                logexception("sending email:".format(error))
+                utils.logexception("sending email:".format(error))
 
     resp = make_response('')
     resp.status_code = 200
@@ -1164,6 +1229,6 @@ def get_monitoring_info():
         try:
             monitoring_data = response.json()['result']['groups'][0]['paasMachines'][0]['services'][0]['paasMetrics']
         except Exception:
-            app.logger.debug("Error getting monitoring data")
+            logging.debug("Error getting monitoring data")
 
     return render_template('monitoring_metrics.html', monitoring_data=monitoring_data)

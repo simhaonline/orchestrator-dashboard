@@ -1,10 +1,15 @@
 import json
+import linecache
+import sys
 import yaml
 import requests
 import os
 import io
+import logging
+import subprocess
 from fnmatch import fnmatch
 from hashlib import md5
+
 
 
 def to_pretty_json(value):
@@ -18,6 +23,16 @@ def xstr(s):
 
 def nnstr(s):
     return '' if (s is None or s is '') else str(s)
+
+
+def logexception(err):
+    exc_type, exc_obj, tb = sys.exc_info()
+    f = tb.tb_frame
+    lineno = tb.tb_lineno
+    filename = f.f_code.co_filename
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    logging.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
 
 
 def avatar(email, size):
@@ -77,16 +92,16 @@ def loadtoscatemplates(directory):
     return toscatemplates
 
 
-def extractalltoscainfo(tosca_dir, tosca_pars_dir, tosca_templates, tosca_metadata_dir):
+def extractalltoscainfo(tosca_templates, tosca_dir, tosca_parameters_dir, tosca_metadata_dir):
     tosca_info = {}
     for tosca in tosca_templates:
         with io.open(tosca_dir + tosca) as stream:
             template = yaml.full_load(stream)
-            tosca_info[tosca] = extracttoscainfo(template, tosca, tosca_pars_dir, tosca_metadata_dir)
+            tosca_info[tosca] = extracttoscainfo(template, tosca, tosca_parameters_dir, tosca_metadata_dir)
     return tosca_info
 
 
-def extracttoscainfo(template, tosca, tosca_pars_dir, tosca_metadata_dir):
+def extracttoscainfo(template, tosca, tosca_parameters_dir, tosca_metadata_dir):
 
     tosca_info = {
         "valid": True,
@@ -144,23 +159,23 @@ def extracttoscainfo(template, tosca, tosca_pars_dir, tosca_metadata_dir):
         if 'policies' in template['topology_template']:
             tosca_info['policies'] = template['topology_template']['policies']
 
-        # add parameters code here
-        if tosca and tosca_pars_dir:
-            tosca_pars_path = tosca_pars_dir + "/"  # this has to be reassigned here because is local.
+        # parameters override
+        if tosca and tosca_parameters_dir:
+            tosca_pars_path = tosca_parameters_dir + "/"  # this has to be reassigned here because is local.
             for fpath, subs, fnames in os.walk(tosca_pars_path):
                 for fname in fnames:
                     if fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yml') or \
                             fnmatch(fname, os.path.splitext(tosca)[0] + '.parameters.yaml'):
                         # skip hidden files
                         if fname[0] != '.':
-                            tosca_pars_file = os.path.join(fpath, fname)
-                            with io.open(tosca_pars_file) as pars_file:
-                                tosca_info['enable_config_form'] = True
-                                pars_data = yaml.full_load(pars_file)
-                                pars_inputs = pars_data["inputs"]
-                                tosca_info['inputs'] = {**tosca_inputs, **pars_inputs}
-                                if "tabs" in pars_data:
-                                    tosca_info['tabs'] = pars_data["tabs"]
+                            tosca_info['enable_config_form'] = True
+                            tosca_parameters_file = os.path.join(fpath, fname)
+                            with io.open(tosca_parameters_file) as parameters_file:
+                                parameters_data = yaml.full_load(parameters_file)
+                                parameters_inputs = parameters_data["inputs"]
+                                tosca_info['inputs'] = {**tosca_inputs, **parameters_inputs}
+                                if "tabs" in parameters_data:
+                                    tosca_info['tabs'] = parameters_data["tabs"]
 
     return tosca_info
 
