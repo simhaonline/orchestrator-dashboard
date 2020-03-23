@@ -54,7 +54,7 @@ def check_template_access(allowed_groups, user_groups):
 @home_bp.route('/')
 def home():
     if not iam_blueprint.session.authorized:
-        return redirect(url_for('login'))
+        return redirect(url_for('home_bp.login'))
 
     account_info = iam_blueprint.session.get("/userinfo")
 
@@ -115,7 +115,7 @@ def home():
 def logout():
     session.clear()
     iam_blueprint.session.get("/logout")
-    return redirect(url_for('login'))
+    return redirect(url_for('home_bp.login'))
 
 
 @home_bp.route('/callback', methods=['POST'])
