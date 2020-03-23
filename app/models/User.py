@@ -1,35 +1,8 @@
 from app import db
 from sqlalchemy.orm import relationship
 
-class UserMixin(object):
 
-    @classmethod
-    def get_user(cls, subject):
-        return cls.query.get(subject)
-
-    @classmethod
-    def get_users(cls):
-        users = cls.query.order_by(User.family_name.desc(), User.given_name.desc()).all()
-        return users
-
-    @classmethod
-    def update_user(cls, subject, data):
-        cls.query.filter_by(sub=subject).update(data)
-        db.session.commit()
-
-    @classmethod
-    def get_ssh_pub_key(self, subject):
-        user = self.get_user(subject)
-        return user.sshkey
-
-    @classmethod
-    def delete_ssh_key(self, subject):
-        self.query.get(subject).sshkey = None
-        db.session.commit()
-
-
-
-class User(UserMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
     sub = db.Column(db.String(36), primary_key=True)
     name = db.Column(db.String(128), nullable=True)

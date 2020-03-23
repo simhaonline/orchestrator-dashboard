@@ -2,23 +2,8 @@ from app import db
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-class DeploymentMixin(object):
 
-    @classmethod
-    def update_deployment(cls, depuuid, data):
-        cls.query.filter_by(uuid=depuuid).update(data)
-        db.session.commit()
-
-    @classmethod
-    def get_user_deployments(cls, user_sub):
-        return cls.query.filter_by(sub=user_sub).all()
-
-    @classmethod
-    def get_deployment(cls, uuid):
-        return cls.query.get(uuid)
-
-
-class Deployment(DeploymentMixin, db.Model):
+class Deployment(db.Model):
     __tablename__ = 'deployments'
     uuid = db.Column(db.String(36), primary_key=True)
     creation_time = db.Column(db.DateTime, nullable=True)
@@ -34,6 +19,7 @@ class Deployment(DeploymentMixin, db.Model):
     endpoint = db.Column(db.String(256), nullable=True)
     template = db.Column(db.Text, nullable=True)
     inputs = db.Column(db.Text, nullable=True)
+    stinputs = db.Column(db.Text, nullable=True)
     params = db.Column(db.Text, nullable=True)
     locked = db.Column(db.Integer, nullable=True, default=0)
     feedback_required = db.Column(db.Integer, nullable=True, default=1)

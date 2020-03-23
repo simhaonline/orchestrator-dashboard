@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     Flask-Vault
     :author: Marica Antonacci <marica.antonacci@ba.infn.it>
@@ -6,12 +5,8 @@
     -------------------
     Allows to interact with Vault for secrets management in Flask applications.
 """
-import os
-from logging import getLogger
+
 from .VaultClient import VaultClient
-
-
-log = getLogger(__name__)
 
 
 class Vault(object):
@@ -21,12 +16,6 @@ class Vault(object):
     """
 
     def __init__(self, app=None, vault_url=None, vault_secrets_path=None, vault_bound_audience=None, vault_role=None):
-        """
-        Initialize the flask extension
-        :param app: flask.Flask application instance
-        :param client_id: the app registration (client) id
-        :param secret: the app registration secret
-        """
 
         self.vault_url = vault_url
         self.vault_secrets_path = vault_secrets_path

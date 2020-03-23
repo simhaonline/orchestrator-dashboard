@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+
+    {% include 'flashed_messages.html' %}
+
+    <br>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h4 class="font-weight-bold text-primary">
+            Swift Token Encoder
+            </h4>
+        </div>
+
+        <div class="card-body">
+            {% if token %}
+                <h5 class="font-weight-bold text-primary">
+                    Encoded Token<br><br>{{token}}
+                </h5>
+            {% else %}
+            <form id="stkSubmit" action="{{ url_for('swift_bp.createswifttoken') }}" method="post" >
+                <div class="form-group">
+                    <label for="swiftauthurl">Swift Auth URL</label>
+                    <input type="text" class="form-control" id="swiftauthurl" name="swiftauthurl" placeholder="Siwft auth URL (Keystone)" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="swiftauthversion">Swift Auth Version</label>
+                    <input type="text" class="form-control" id="swiftauthversion" name="swiftauthversion" placeholder="Siwft auth Version (Keystone)" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="swiftuser">Swift Username</label>
+                    <input type="text" class="form-control" id="swiftuser" name="swiftuser" placeholder="Siwft Username" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="swiftkey">Swift Password</label>
+                    <input type="text" class="form-control" id="swiftkey" name="swiftkey" placeholder="Siwft Password" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="swifttenant">Swift Tenant Name</label>
+                    <input type="text" class="form-control" id="swifttenant" name="swifttenant" placeholder="Siwft Tenant Name" value="" required>
+                </div>
+                <div class="form-group">
+                    <label for="swifcontainer">Swift Upload Container Name</label>
+                    <input type="text" class="form-control" id="swifcontainer" name="swifcontainer" placeholder="Siwft Upload Container Name" value="" required>
+                </div>
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
+                <span class="fas fa-ban mr-2"></span>Cancel</button>
+            </form>
+           {% endif %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

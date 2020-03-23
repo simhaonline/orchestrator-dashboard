@@ -1,15 +1,11 @@
-from app import app, iam_blueprint, mail, settings, db, tosca
-from app.providers import sla
-from app.utils import utils, auth
-from app.models.Deployment import Deployment
+from .. import app, iam_blueprint, mail, db, tosca
+from app.lib import utils, auth, settings, dbhelpers
 from app.models.User import User
 from markupsafe import Markup
 from werkzeug.exceptions import Forbidden
-from flask import json, render_template, request, redirect, url_for, flash, session, make_response
+from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response
 from flask_mail import Message
 import json
-import linecache
-import sys
 
 
 iam_base_url = settings.iamUrl
@@ -27,51 +23,35 @@ toscaInfo = tosca.tosca_info
 app.logger.debug("TOSCA INFO: " + json.dumps(toscaInfo))
 app.logger.debug("TOSCA DIR: " + tosca.tosca_dir)
 
+home_bp = Blueprint('home_bp', __name__, template_folder='templates', static_folder='static')
 
-@app.route('/settings')
+@home_bp.route('/settings')
 @auth.authorized_with_valid_token
 def show_settings():
     return render_template('settings.html',
                            iam_url=settings.iamUrl,
                            orchestrator_url=settings.orchestratorUrl,
                            orchestrator_conf=settings.orchestratorConf,
-                           vault_url=app.config.get('VAULT_URL')
-)
+                           vault_url=app.config.get('VAULT_URL'))
 
 
-
-@app.route('/login')
+@home_bp.route('/login')
 def login():
     session.clear()
     return render_template(app.config.get('HOME_TEMPLATE'))
 
 
-def logexception(err):
-    exc_type, exc_obj, tb = sys.exc_info()
-    f = tb.tb_frame
-    lineno = tb.tb_lineno
-    filename = f.f_code.co_filename
-    linecache.checkcache(filename)
-    line = linecache.getline(filename, lineno, f.f_globals)
-    app.logger.error('{} at ({}, LINE {} "{}"): {}'.format(err, filename, lineno, line.strip(), exc_obj))
-
 def check_template_access(allowed_groups, user_groups):
 
-    #check intersection of user groups with user membership
-    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
-        return True
-    else:
-        return False
-
-def check_template_access(allowed_groups, user_groups):
-    #check intersection of user groups with user membership
-    if (set(allowed_groups.split(','))&set(user_groups)) != set() or allowed_groups == '*':
+    # check intersection of user groups with user membership
+    if (set(allowed_groups.split(',')) & set(user_groups)) != set() or allowed_groups == '*':
         return True
     else:
         return False
 
 
 @app.route('/')
+@home_bp.route('/')
 def home():
     if not iam_blueprint.session.authorized:
         return redirect(url_for('login'))
@@ -83,8 +63,9 @@ def home():
         user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-            if set(settings.iamGroups)&set(user_groups) == set():
-                app.logger.debug("No match on group membership. User group membership: {0} whereas requested" + json.dumps(user_groups))
+            if set(settings.iamGroups) & set(user_groups) == set():
+                app.logger.debug("No match on group membership. User group membership: {0} whereas requested"
+                                 + json.dumps(user_groups))
                 message = Markup(
                     'You need to be a member of one (or more) of these IAM groups: {0}. <br>' +
                     'Please, visit <a href="{1}">{1}</a> and apply for the requested membership.'.format(
@@ -103,7 +84,7 @@ def home():
         # if user not found, insert
         #
         app.logger.info(dir(User))
-        user = User.get_user(account_info_json['sub'])
+        user = dbhelpers.get_user(account_info_json['sub'])
         if user is None:
             email = account_info_json['email']
             admins = json.dumps(app.config['ADMINS'])
@@ -130,17 +111,14 @@ def home():
         return render_template('portfolio.html', templates=templates)
 
 
-
-
-
-@app.route('/logout')
+@home_bp.route('/logout')
 def logout():
     session.clear()
     iam_blueprint.session.get("/logout")
     return redirect(url_for('login'))
 
 
-@app.route('/callback', methods=['POST'])
+@home_bp.route('/callback', methods=['POST'])
 def callback():
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
@@ -152,10 +130,10 @@ def callback():
     status_reason = payload['statusReason'] if 'statusReason' in payload else ''
     rf = 0
 
-    user = User.get_user(payload['createdBy']['subject'])
+    user = dbhelpers.get_user(payload['createdBy']['subject'])
     user_email = user.email  # email
 
-    dep = Deployment.get_deployment(uuid)
+    dep = dbhelpers.get_deployment(uuid)
 
     if dep is not None:
 
@@ -188,7 +166,7 @@ def callback():
             try:
                 mail.send(msg)
             except Exception as error:
-                logexception("sending email:".format(error))
+                utils.logexception("sending email:".format(error))
 
         if status == 'CREATE_FAILED':
             msg = Message("Deployment failed",
@@ -198,7 +176,7 @@ def callback():
             try:
                 mail.send(msg)
             except Exception as error:
-                logexception("sending email:".format(error))
+                utils.logexception("sending email:".format(error))
 
     resp = make_response('')
     resp.status_code = 200

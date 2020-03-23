@@ -17,6 +17,6 @@ orchestratorConf = {
   'slam_url': tempSlamUrl + "/rest/slam",
   'im_url': app.config.get('IM_URL'),
   'monitoring_url': app.config.get('MONITORING_URL'),
-  'vault_url' : app.config.get('VAULT_URL')
+  'vault_url': app.config.get('VAULT_URL')
 }
 

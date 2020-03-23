@@ -1,9 +1,49 @@
-from app import app, iam_blueprint, settings, db
+from app import iam_blueprint, db
+from . import settings
 import requests
 from dateutil import parser
 from app.models.Deployment import Deployment
+from app.models.User import User
 from flask import json
 import datetime
+import logging
+
+
+def get_user(subject):
+    return User.query.get(subject)
+
+
+def get_users():
+    users = User.query.order_by(User.family_name.desc(), User.given_name.desc()).all()
+    return users
+
+
+def update_user(subject, data):
+    User.query.filter_by(sub=subject).update(data)
+    db.session.commit()
+
+
+def get_ssh_pub_key(subject):
+    user = User.query.get(subject)
+    return user.sshkey
+
+
+def delete_ssh_key(subject):
+    User.query.get(subject).sshkey = None
+    db.session.commit()
+
+
+def update_deployment(depuuid, data):
+    Deployment.query.filter_by(uuid=depuuid).update(data)
+    db.session.commit()
+
+
+def get_user_deployments(user_sub):
+    return Deployment.query.filter_by(sub=user_sub).all()
+
+
+def get_deployment(uuid):
+    return Deployment.query.get(uuid)
 
 
 def updatedeploymentsstatus(deployments, userid):
@@ -27,7 +67,7 @@ def updatedeploymentsstatus(deployments, userid):
         status_reason = dep_json['statusReason'] if 'statusReason' in dep_json else ''
         vphid = dep_json['physicalId'] if 'physicalId' in dep_json else ''
 
-        dep = Deployment.get_deployment(uuid)
+        dep = get_deployment(uuid)
 
         if dep is not None:
             if dep.status != dep_json['status'] or dep.provider_name != providername \
@@ -47,7 +87,7 @@ def updatedeploymentsstatus(deployments, userid):
 
             deps.append(dep)
         else:
-            app.logger.info("Deployment with uuid:{} not found!".format(uuid))
+            logging.info("Deployment with uuid:{} not found!".format(uuid))
 
             # retrieve template
             access_token = iam_blueprint.session.token['access_token']
@@ -73,6 +113,7 @@ def updatedeploymentsstatus(deployments, userid):
                                     sub=userid,
                                     template=template,
                                     inputs='',
+                                    stinputs='',
                                     params='',
                                     provider_name=providername,
                                     endpoint=endpoint,
@@ -134,6 +175,8 @@ def cvdeployment(d):
                             template=d.template,
                             inputs=json.loads(
                                 d.inputs.replace("\n", "\\n")) if (d.inputs is not None and d.inputs is not '') else '',
+                            stinputs=json.loads(
+                                d.stinputs.replace("\n", "\\n")) if (d.stinputs is not None and d.stinputs is not '') else '',
                             params=d.params,
                             provider_name='' if d.provider_name is None else d.provider_name,
                             endpoint=d.endpoint,

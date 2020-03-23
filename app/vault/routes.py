@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, flash, request, redirect, url_for, session
-from app import app, iam_blueprint, settings, vault
-from app.utils import auth, sshkey
+from app import app, iam_blueprint, vault
+from app.lib import auth, sshkey, settings
 from app.models.Deployment import Deployment
 from app.models.User import User
 

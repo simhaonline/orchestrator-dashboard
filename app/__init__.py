@@ -10,37 +10,38 @@ from flask_dance.consumer import OAuth2ConsumerBlueprint
 from flask_mail import Mail
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate, upgrade
-from app.extensions.flask_tosca import ToscaInfo
-from app.extensions.flask_vault import Vault
+from app.lib.ToscaInfo import ToscaInfo
+from app.lib.Vault import Vault
 
 import logging
 
-# db variable initialization
+# initialize SQLAlchemy
 db: SQLAlchemy = SQLAlchemy()
 
 # initialize Migrate
 migrate: Migrate = Migrate()
 
-# Intialize the extension
+# Intialize Alembic
 alembic: Alembic = Alembic()
 
-# initialize ToscaInfo extension
-tosca : ToscaInfo = ToscaInfo()
+# initialize ToscaInfo
+tosca: ToscaInfo = ToscaInfo()
 
-# initialize Vault extension
-vault : Vault = Vault()
+# initialize Vault
+vault: Vault = Vault()
 
 app = Flask(__name__, instance_relative_config=True)
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
 app.config.from_object('config.default')
 app.config.from_json('config.json')
-if app.config.get("ENABLE_VAULT_INTEGRATION"):
+if app.config.get("FEATURE_VAULT_INTEGRATION"):
     app.config.from_json('vault-config.json')
 
 profile = app.config.get('CONFIGURATION_PROFILE')
-if profile != 'default':
+if profile is not None and profile != 'default':
     app.config.from_object('config.' + profile)
+
 
 @app.context_processor
 def inject_settings():
@@ -48,13 +49,14 @@ def inject_settings():
         footer_template=app.config.get('FOOTER_TEMPLATE'),
         welcome_message=app.config.get('WELCOME_MESSAGE'),
         navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
-        enable_vault_integration=False if app.config.get('ENABLE_VAULT_INTEGRATION').lower() == 'no' else True,
+        enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True,
         external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
-        enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get('FEATURE_ADVANCED_MENU') else "no",
+        enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get(
+            'FEATURE_ADVANCED_MENU') else "no",
         enable_update_deployment=app.config.get('FEATURE_UPDATE_DEPLOYMENT') if app.config.get(
-                                   'FEATURE_UPDATE_DEPLOYMENT') else "no",
+            'FEATURE_UPDATE_DEPLOYMENT') else "no",
         hidden_deployment_columns=app.config.get('FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') if app.config.get(
-                                    'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
+            'FEATURE_HIDDEN_DEPLOYMENT_COLUMNS') else ""
     )
 
 
@@ -63,10 +65,12 @@ migrate.init_app(app, db)
 alembic.init_app(app, run_mkdir=False)
 tosca.init_app(app)
 
-if app.config.get("ENABLE_VAULT_INTEGRATION"):
+if app.config.get("FEATURE_VAULT_INTEGRATION"):
     vault.init_app(app)
 
-from app.errors.handlers import errors_bp
+mail = Mail(app)
+
+from app.errors.routes import errors_bp
 app.register_blueprint(errors_bp)
 
 iam_base_url = app.config['IAM_BASE_URL']
@@ -86,32 +90,34 @@ iam_blueprint = OAuth2ConsumerBlueprint(
 )
 app.register_blueprint(iam_blueprint, url_prefix="/login")
 
-from app.users.users import users_bp
+from app.home.routes import home_bp
+app.register_blueprint(home_bp, url_prefix="/home")
+
+from app.users.routes import users_bp
 app.register_blueprint(users_bp, url_prefix="/users")
 
-from app.deployments.deployments import deployments_bp
-app.register_blueprint(deployments_bp, url_prefix="/deployments" )
+from app.deployments.routes import deployments_bp
+app.register_blueprint(deployments_bp, url_prefix="/deployments")
 
-from app.providers.providers import providers_bp
+from app.providers.routes import providers_bp
 app.register_blueprint(providers_bp, url_prefix="/providers")
 
-if app.config.get("ENABLE_VAULT_INTEGRATION"):
-    from app.vault.vault import vault_bp
+from app.swift.routes import swift_bp
+app.register_blueprint(swift_bp, url_prefix="/providers")
+
+if app.config.get("FEATURE_VAULT_INTEGRATION"):
+    from app.vault.routes import vault_bp
     app.register_blueprint(vault_bp, url_prefix="/vault")
 
-mail = Mail(app)
-
 # logging
-
 loglevel = app.config.get("LOG_LEVEL") if app.config.get("LOG_LEVEL") else "INFO"
-
 numeric_level = getattr(logging, loglevel.upper(), None)
 if not isinstance(numeric_level, int):
     raise ValueError('Invalid log level: %s' % loglevel)
 
 logging.basicConfig(level=numeric_level)
 
-from app import routes
+from app import models
 
 # check if database exists
 engine = db.get_engine(app)
@@ -138,7 +144,6 @@ else:
         ins = alembic_version.insert().values(version_num=baseversion)
         conn = engine.connect()
         result = conn.execute(ins)
-
 
 # update database, run flask_migrate.upgrade()
 with app.app_context():

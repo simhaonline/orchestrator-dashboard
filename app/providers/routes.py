@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, flash, request
 from app.providers import sla
-from app import app, iam_blueprint, settings
-from app.utils import auth
+from app import app, iam_blueprint
+from app.lib import auth, settings
 import requests
 
 

@@ -1,9 +1,9 @@
-from app import app, settings, iam_blueprint
+from app import app, iam_blueprint
 from flask import redirect, render_template, session, url_for, json
 from functools import wraps
 import ast
 import requests
-from . import utils
+from . import utils, settings
 
 
 def validate_configuration():
@@ -45,7 +45,8 @@ def only_for_admin(f):
 
 def exchange_token_with_audience(iam_url, client_id, client_secret, iam_token, audience):
 
-    payload_string = '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "' + audience + '", "subject_token": "' + iam_token + '", "scope": "openid profile" }'
+    payload_string = '{ "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange", "audience": "' \
+                     + audience + '", "subject_token": "' + iam_token + '", "scope": "openid profile" }'
 
     # Convert string payload to dictionary
     payload = ast.literal_eval(payload_string)

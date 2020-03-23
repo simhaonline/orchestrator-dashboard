@@ -2,6 +2,7 @@ import base64
 import binascii
 import struct
 
+
 def generate_ssh_key():
     from cryptography.hazmat.primitives import serialization as crypto_serialization
     from cryptography.hazmat.primitives.asymmetric import rsa
@@ -22,6 +23,7 @@ def generate_ssh_key():
     )
 
     return private_key, public_key
+
 
 def check_ssh_key(key):
     # credits to: https://gist.github.com/piyushbansal/5243418

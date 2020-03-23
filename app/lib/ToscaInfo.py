@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
     Flask-Tosca
     :author: Marica Antonacci <marica.antonacci@ba.infn.it>
@@ -6,21 +5,14 @@
     -------------------
     Allows to load tosca templates in Flask applications.
 """
+
 import os
 import io
 from fnmatch import fnmatch
 import yaml
-from logging import getLogger
-from . import helpers
-
-
-log = getLogger(__name__)
 
 
 class ToscaInfo(object):
-    """
-
-    """
 
     def __init__(self, app=None, tosca_dir=None, tosca_params_dir=None, tosca_metadata_dir=None):
         """
@@ -35,6 +27,7 @@ class ToscaInfo(object):
         self.tosca_params_dir = tosca_params_dir
         self.tosca_metadata_dir = tosca_metadata_dir
         self.tosca_info = {}
+        self.tosca_templates = []
 
         self.app = app
         if app is not None:
@@ -49,9 +42,8 @@ class ToscaInfo(object):
         if self.tosca_metadata_dir is None:
             self.tosca_metadata_dir = app.config.get('TOSCA_METADATA_DIR')
 
-        tosca_templates = self._loadtoscatemplates()
-        self.tosca_info = self._extractalltoscainfo(tosca_templates)
-
+        self.tosca_templates = self._loadtoscatemplates()
+        self.tosca_info = self._extractalltoscainfo(self.tosca_templates)
 
     def _loadtoscatemplates(self):
         toscatemplates = []
@@ -64,7 +56,6 @@ class ToscaInfo(object):
 
         return toscatemplates
 
-
     def _extractalltoscainfo(self, tosca_templates):
         tosca_info = {}
         for tosca in tosca_templates:
@@ -72,7 +63,6 @@ class ToscaInfo(object):
                 template = yaml.full_load(stream)
                 tosca_info[tosca] = self.extracttoscainfo(template, tosca)
         return tosca_info
-
 
     def extracttoscainfo(self, template, tosca):
 
@@ -127,7 +117,7 @@ class ToscaInfo(object):
                 tosca_info['inputs'] = tosca_inputs
 
             if 'node_templates' in template['topology_template']:
-                tosca_info['deployment_type'] = helpers.getdeploymenttype(template['topology_template']['node_templates'])
+                tosca_info['deployment_type'] = getdeploymenttype(template['topology_template']['node_templates'])
 
             if 'policies' in template['topology_template']:
                 tosca_info['policies'] = template['topology_template']['policies']
@@ -152,4 +142,60 @@ class ToscaInfo(object):
         return tosca_info
 
 
+# Helper functions
+def getdeploymenttype(nodes):
+    deployment_type = ""
+    for (j, u) in nodes.items():
+        if deployment_type == "":
+            for (k, v) in u.items():
+                if k == "type" and v == "tosca.nodes.indigo.Compute":
+                    deployment_type = "CLOUD"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Marathon":
+                    deployment_type = "MARATHON"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Container.Application.Docker.Chronos":
+                    deployment_type = "CHRONOS"
+                    break
+                if k == "type" and v == "tosca.nodes.indigo.Qcg.Job":
+                    deployment_type = "QCG"
+                    break
+    return deployment_type
 
+
+def getslapolicy(template):
+    sla_id = ''
+    if 'policies' in template:
+        for policy in template['policies']:
+            if sla_id == '':
+                for (k, v) in policy.items():
+                    if "type" in v \
+                            and (v['type'] == 'tosca.policies.indigo.SlaPlacement'
+                                 or v['type'] == 'tosca.policies.Placement'):
+                        if 'properties' in v:
+                            sla_id = v['properties']['sla_id'] if 'sla_id' in v['properties'] \
+                                else ''
+                        break
+    return sla_id
+
+
+def eleasticdeployment(template):
+    return hasnodeoftype(template, 'tosca.nodes.indigo.ElasticCluster')
+
+
+def updatabledeployment(template):
+    return hasnodeoftype(template, 'tosca.nodes.indigo.LRMS.WorkerNode')
+
+
+def hasnodeoftype(template, nodetype):
+    found = False
+    if 'topology_template' in template:
+        if 'node_templates' in template['topology_template']:
+            for (j, u) in template['topology_template']['node_templates'].items():
+                if found:
+                    break
+                for (k, v) in u.items():
+                    if k == 'type' and nodetype in v:
+                        found = True
+                        break
+    return found

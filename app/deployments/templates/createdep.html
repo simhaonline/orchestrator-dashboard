@@ -21,7 +21,7 @@
               <div class="modal-body">
               <p>SSH keys allow you to establish a secure connection between your computer and your virtual machine. At least one public key has to be provided mandatorily.</p>
               <hr>
-              <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("ssh_keys") }}">here</a></p>
+              <p>To create a new ssh key pair or upload your public key, please go <a href="{{ url_for("vault_bp.ssh_keys") }}">here</a></p>
               <p>You can still provide a key in the dedicated field of the form.</p>
               <p>For more information, please visit our <a href="https://laniakea.readthedocs.io/en/latest/user_documentation/ssh_keys/ssh_keys.html" target="_blank">documentation page</a>.</p>
               </div>
@@ -49,14 +49,14 @@
                 <strong>Description:</strong> {{template['description']}}
             </div>
 
-            <form id="depSubmit" action="{{ url_for('createdep', template=selectedTemplate) }}" method="post">
+            <form id="depSubmit" action="{{ url_for('deployments_bp.createdep', template=selectedTemplate) }}" method="post" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="additional_description">Instance description</label>
                     <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value="" required>
                 </div>
                 {% include 'config_form.html' %}
-            <button type="submit" class="btn btn-success submitBtn">Submit</button>
-            <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home') }}'">
+                <button type="submit" class="btn btn-success submitBtn">Submit</button>
+                <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
             </form>
         </div>

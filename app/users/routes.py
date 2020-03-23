@@ -1,10 +1,10 @@
 from flask import Blueprint, session, render_template, flash, request
-from app.utils import auth
+from app.lib import auth, dbhelpers, settings
 from app.models.Deployment import Deployment
 from app.models.User import User
-from app.models import helpers as models_helpers
-from app import app, iam_blueprint, settings
+from app import app, iam_blueprint
 import requests
+
 
 users_bp = Blueprint('users_bp', __name__, template_folder='templates', static_folder='static')
 
@@ -14,7 +14,7 @@ users_bp = Blueprint('users_bp', __name__, template_folder='templates', static_f
 @auth.only_for_admin
 def show_users():
 
-    users = User.get_users()
+    users = dbhelpers.get_users()
     return render_template('users.html', users=users)
 
 
@@ -32,9 +32,9 @@ def show_user(subject):
             role = request.form['role']
         active = request.form['active']
         # update database
-        User.update_user(subject, dict(role=role, active=active))
+        dbhelpers.update_user(subject, dict(role=role, active=active))
 
-    user = User.get_user(subject)
+    user = dbhelpers.get_user(subject)
     if user is not None:
         return render_template('user.html', user=user)
     else:
@@ -50,7 +50,7 @@ def show_deployments(subject):
     if not issuer.endswith('/'):
         issuer += '/'
 
-    user = User.get_user(subject)
+    user = dbhelpers.get_user(subject)
 
     if user is not None:
         #
@@ -66,11 +66,11 @@ def show_deployments(subject):
         iids = []
         if response.ok:
             deporch = response.json()["content"]
-            iids = models_helpers.updatedeploymentsstatus(deporch, subject)['iids']
+            iids = dbhelpers.updatedeploymentsstatus(deporch, subject)['iids']
 
         #
         # retrieve deployments from DB
-        deployments = models_helpers.cvdeployments(Deployment.get_user_deployments(user.sub))
+        deployments = dbhelpers.cvdeployments(dbhelpers.get_user_deployments(user.sub))
         for dep in deployments:
             newremote = dep.remote
             if dep.uuid not in iids:
@@ -80,7 +80,7 @@ def show_deployments(subject):
                 if dep.remote == 0:
                     newremote = 1
             if dep.remote != newremote:
-                Deployment.update_deployment(dep.uuid, dict(remote=newremote))
+                dbhelpers.update_deployment(dep.uuid, dict(remote=newremote))
 
         return render_template('dep_user.html', user=user, deployments=deployments)
     else:
