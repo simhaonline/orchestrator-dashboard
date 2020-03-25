@@ -28,7 +28,7 @@ alembic: Alembic = Alembic()
 tosca: ToscaInfo = ToscaInfo()
 
 # initialize Vault
-vault: Vault = Vault()
+vaultservice: Vault = Vault()
 
 app = Flask(__name__, instance_relative_config=True)
 app.wsgi_app = ProxyFix(app.wsgi_app)
@@ -66,7 +66,7 @@ alembic.init_app(app, run_mkdir=False)
 tosca.init_app(app)
 
 if app.config.get("FEATURE_VAULT_INTEGRATION"):
-    vault.init_app(app)
+    vaultservice.init_app(app)
 
 mail = Mail(app)
 

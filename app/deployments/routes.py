@@ -90,7 +90,7 @@ def unlockdeployment(depid=None):
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
-@deployments_bp.route('/<depid>/outputs')
+@deployments_bp.route('/<depid>/details')
 @auth.authorized_with_valid_token
 def depoutput(depid=None):
     if not session['userrole'].lower() == 'admin' and depid not in session['deployments_uuid_array']:

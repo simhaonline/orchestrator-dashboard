@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, flash, request, redirect, url_for, session
-from app import app, iam_blueprint, vault
-from app.lib import auth, sshkey, settings
+from app import app, iam_blueprint, vaultservice
+from app.lib import auth, sshkey as sshkeyhelpers, settings, dbhelpers
 from app.models.Deployment import Deployment
 from app.models.User import User
 
@@ -30,13 +30,13 @@ def read_secret_from_vault(depid=None):
     # retrieve deployment from DB
     dep = Deployment.get_deployment(depid)
     if dep is None:
-        return redirect(url_for('home'))
+        return redirect(url_for('home_bp.home'))
     else:
 
         jwt_token = auth.exchange_token_with_audience(iam_base_url,
                          iam_client_id, iam_client_secret, access_token, vault_bound_audience)
 
-        vault_client = vault.connect(jwt_token, vault_role)
+        vault_client = vaultservice.connect(jwt_token, vault_role)
 
         read_token = vault_client.get_token(vault_read_policy, vault_read_token_time_duration,
                                      vault_read_token_renewal_duration)
@@ -56,19 +56,19 @@ def read_secret_from_vault(depid=None):
 @auth.authorized_with_valid_token
 def create_ssh_key(subject):
     access_token = iam_blueprint.session.token['access_token']
-    privkey, pubkey = sshkey.generate_ssh_key()
+    privkey, pubkey = sshkeyhelpers.generate_ssh_key()
     privkey = privkey.decode("utf-8").replace("\n", "\\n")
     store_privkey_to_vault(access_token, privkey)
 
     User.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
 
-    return redirect(url_for('ssh_keys'))
+    return redirect(url_for('vault_bp.ssh_keys'))
 
 
-@app.route('/ssh_keys')
+@vault_bp.route('/ssh_keys')
 @auth.authorized_with_valid_token
 def ssh_keys():
-    sshkey = User.get_ssh_pub_key(session['userid'])
+    sshkey = dbhelpers.get_ssh_pub_key(session['userid'])
     return render_template('ssh_keys.html', sshkey=sshkey)
 
 
@@ -83,7 +83,7 @@ def store_privkey_to_vault(access_token, privkey_value):
     jwt_token = auth.exchange_token_with_audience(iam_base_url,
                                                   iam_client_id, iam_client_secret, access_token, vault_bound_audience)
 
-    vault_client = vault.connect(jwt_token, vault_role)
+    vault_client = vaultservice.connect(jwt_token, vault_role)
 
     write_token = vault_client.get_token(vault_write_policy, vault_write_token_time_duration,
                                   vault_write_token_renewal_time_duration)
@@ -98,7 +98,7 @@ def store_privkey_to_vault(access_token, privkey_value):
     return response_output
 
 
-@app.route('/read_privkey_from_vault/<subject>')
+@vault_bp.route('/read_privkey_from_vault/<subject>')
 @auth.authorized_with_valid_token
 def read_privkey_from_vault(subject):
 
@@ -113,7 +113,7 @@ def read_privkey_from_vault(subject):
     jwt_token = auth.exchange_token_with_audience(iam_base_url,
                                                   iam_client_id, iam_client_secret, access_token, vault_bound_audience)
 
-    vault_client = vault.connect(jwt_token, vault_role)
+    vault_client = vaultservice.connect(jwt_token, vault_role)
 
     read_token = vault_client.get_token(vault_read_policy, vault_read_token_time_duration,
                                  vault_read_token_renewal_duration)
@@ -127,7 +127,7 @@ def read_privkey_from_vault(subject):
 
     return response_output
 
-@app.route('/delete_ssh_key/<subject>')
+@vault_bp.route('/delete_ssh_key/<subject>')
 @auth.authorized_with_valid_token
 def delete_ssh_key(subject):
 
@@ -145,28 +145,28 @@ def delete_ssh_key(subject):
     jwt_token = auth.exchange_token_with_audience(iam_base_url,
                                                   iam_client_id, iam_client_secret, access_token, vault_bound_audience)
 
-    vault_client = vault.connect(jwt_token, vault_role)
+    vault_client = vaultservice.connect(jwt_token, vault_role)
 
     delete_token = vault_client.get_token(vault_delete_policy, vault_delete_token_time_duration,
                                    vault_delete_token_renewal_time_duration)
 
     vault_client.delete_secret(delete_token, privkey_key)
 
-    return redirect(url_for('ssh_keys'))
+    return redirect(url_for('vault_bp.ssh_keys'))
 
 
-@app.route('/update_ssh_key/<subject>', methods=['POST'])
+@vault_bp.route('/update_ssh_key/<subject>', methods=['POST'])
 @auth.authorized_with_valid_token
 def update_ssh_key(subject):
 
     sshkey = request.form['sshkey']
-    if str(sshkey.check_ssh_key(sshkey.encode())) != "0":
+    if sshkey == "" or str(sshkeyhelpers.check_ssh_key(sshkey.encode())) != "0":
         flash("Invaild SSH public key. Please insert a correct one.", 'warning')
-        return redirect(url_for('ssh_keys'))
+        return redirect(url_for('vault_bp.ssh_keys'))
 
     User.update_user(subject, dict(sshkey=sshkey))
 
-    return redirect(url_for('ssh_keys'))
+    return redirect(url_for('vault_bp.ssh_keys'))
 
 
 
