@@ -35,7 +35,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app)
 app.secret_key = "30bb7cf2-1fef-4d26-83f0-8096b6dcc7a3"
 app.config.from_object('config.default')
 app.config.from_json('config.json')
-if app.config.get("FEATURE_VAULT_INTEGRATION"):
+
+if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     app.config.from_json('vault-config.json')
 
 profile = app.config.get('CONFIGURATION_PROFILE')
@@ -65,7 +66,7 @@ migrate.init_app(app, db)
 alembic.init_app(app, run_mkdir=False)
 tosca.init_app(app)
 
-if app.config.get("FEATURE_VAULT_INTEGRATION"):
+if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     vaultservice.init_app(app)
 
 mail = Mail(app)
@@ -105,7 +106,7 @@ app.register_blueprint(providers_bp, url_prefix="/providers")
 from app.swift.routes import swift_bp
 app.register_blueprint(swift_bp, url_prefix="/providers")
 
-if app.config.get("FEATURE_VAULT_INTEGRATION"):
+if app.config.get("FEATURE_VAULT_INTEGRATION") == "yes":
     from app.vault.routes import vault_bp
     app.register_blueprint(vault_bp, url_prefix="/vault")
 
