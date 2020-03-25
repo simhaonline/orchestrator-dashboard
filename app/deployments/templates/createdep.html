@@ -7,7 +7,7 @@
     {% include 'flashed_messages.html' %}
 
     <br>
-    {% if ssh_pub_key is none  %}
+    {% if enable_vault_integration and ssh_pub_key is none  %}
     <!-- Modal -->
         <div class="modal fade" id="sshPopupModal" tabindex="-1" role="dialog" aria-labelledby="sshPopupModalLabel" aria-hidden="true">
           <div class="modal-dialog" role="document">
@@ -133,7 +133,7 @@ $(document).ready(function () {
 
 </script>
 
-{% if ssh_pub_key is none  %}
+{% if enable_vault_integration and ssh_pub_key is none  %}
 <script type="text/javascript">
     if (!localStorage.DoNotShowMessageAgain || localStorage.DoNotShowMessageAgain != "true") {
     $(window).on('load',function(){

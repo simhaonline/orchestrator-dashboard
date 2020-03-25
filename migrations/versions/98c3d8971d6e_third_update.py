@@ -23,3 +23,4 @@ def upgrade():
 def downgrade():
     op.drop_column('deployments', 'stinputs')
     # ### end Alembic commands ###
+

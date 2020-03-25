@@ -71,7 +71,7 @@
             {% else %}
 
             <hr>
-            <form id="update_sshkey" action="{{ url_for('update_ssh_key', subject=session['userid']) }}" method="post">
+            <form id="update_sshkey" action="{{ url_for('vault_bp.update_ssh_key', subject=session['userid']) }}" method="post">
                 <div class="form-group">
                     <label for="update_ssh_public_key"><b>Upload SSH public key</b></label>
                     <p>Paste your public SSH key, which is usually contained in the file '~/.ssh/id_ed25519.pub' or '~/.ssh/id_rsa.pub' and begins with 'ssh-ed25519' or 'ssh-rsa'. Don't use your private SSH key.</p>
