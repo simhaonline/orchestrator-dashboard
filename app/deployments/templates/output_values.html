@@ -5,7 +5,7 @@
 <p><strong>{{k}}.ssh_private_key</strong>: <pre>{{ v['token'] | replace("\\n", "\n") }}</pre></p>
 <p><strong>{{k}}.ssh_login</strong>: {{ v['user'] }}</p>
 
-{% elif "endpoint" in k %}
+{% elif "endpoint" in k or "url" in k %}
 <p><strong>{{k}}</strong>: <a href="{{v}}" target="_blank">{{v}}</a></p>
 
 {% else %}
