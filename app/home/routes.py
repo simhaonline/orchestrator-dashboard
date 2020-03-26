@@ -100,7 +100,7 @@ def home():
                         picture=utils.avatar(email, 26),
                         role=role,
                         active=1)
-            dbhelpers.put_object(user)
+            dbhelpers.add_object(user)
 
         session['userrole'] = user.role  # role
 
@@ -149,7 +149,7 @@ def callback():
             dep.task = task
             dep.provider_name = providername
             dep.status_reason = status_reason
-            dbhelpers.put_object(dep)
+            dbhelpers.add_object(dep)
     else:
         app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 

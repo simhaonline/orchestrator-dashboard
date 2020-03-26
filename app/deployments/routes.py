@@ -74,7 +74,7 @@ def lockdeployment(depid=None):
     dep = dbhelpers.get_deployment(depid)
     if dep is not None:
         dep.locked = 1
-        dbhelpers.put_object(dep)
+        dbhelpers.add_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
@@ -84,7 +84,7 @@ def unlockdeployment(depid=None):
     dep = dbhelpers.get_deployment(depid)
     if dep is not None:
         dep.locked = 0
-        dbhelpers.put_object(dep)
+        dbhelpers.add_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
@@ -249,7 +249,7 @@ def updatedep():
         dep.feedback_required = feedback_required
         dep.description = additionaldescription
         dep.template = template_text
-        dbhelpers.put_object(dep)
+        dbhelpers.add_object(dep)
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -472,7 +472,7 @@ def createdep():
                                         vault_secret_key=vault_secret_key,
                                         elastic=elastic,
                                         updatable=updatable)
-                dbhelpers.put_object(deployment)
+                dbhelpers.add_object(deployment)
 
             else:
                 flash("Deployment with uuid:{} is already in the database!".format(uuid))

@@ -8,7 +8,7 @@ from flask import json
 import datetime
 
 
-def put_object(object):
+def add_object(object):
     db.session.add(object)
     db.session.commit()
 
