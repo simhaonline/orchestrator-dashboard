@@ -1,6 +1,5 @@
 import json
 from flask import Blueprint, render_template, request, flash
-from app import app
 from app.lib import auth
 from .swift import Swift
 import logging

@@ -1,4 +1,4 @@
-from .. import app, iam_blueprint, mail, db, tosca
+from .. import app, iam_blueprint, mail, tosca
 from app.lib import utils, auth, settings, dbhelpers
 from app.models.User import User
 from markupsafe import Markup
@@ -100,8 +100,7 @@ def home():
                         picture=utils.avatar(email, 26),
                         role=role,
                         active=1)
-            db.session.add(user)
-            db.session.commit()
+            dbhelpers.put_object(user)
 
         session['userrole'] = user.role  # role
 
@@ -150,8 +149,7 @@ def callback():
             dep.task = task
             dep.provider_name = providername
             dep.status_reason = status_reason
-            db.session.add(dep)
-            db.session.commit()
+            dbhelpers.put_object(dep)
     else:
         app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 

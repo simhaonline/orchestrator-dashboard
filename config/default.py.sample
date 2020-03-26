@@ -26,8 +26,8 @@ MAIL_SENDER = "admin@orchestrator-dashboard"
 ### ADMIN SETTINGS
 SUPPORT_EMAIL = "support@ba.infn.it"
 ADMINS = "['admin@ba.infn.it']"
+
 FEATURE_ADVANCED_MENU = "no"
-FEATURE_VAULT_INTEGRATION = "no"
 FEATURE_UPDATE_DEPLOYMENT = "no"
 FEATURE_HIDDEN_DEPLOYMENT_COLUMNS = "4, 5, 7"
 EXTERNAL_LINKS = []
@@ -37,6 +37,7 @@ LOG_LEVEL = "info"
 UPLOAD_FOLDER = "./upload_swift/"
 
 ### VAULT INTEGRATION SETTINGS
+ENABLE_VAULT_INTEGRATION = "no"
 VAULT_ROLE = "orchestrator"
 VAULT_OIDC_AUDIENCE = "ff2c57dc-fa09-43c9-984e-9ad8afc3fb56"
 

@@ -1,4 +1,4 @@
-from app import iam_blueprint, db
+from app import app, iam_blueprint, db
 from . import settings
 import requests
 from dateutil import parser
@@ -6,7 +6,11 @@ from app.models.Deployment import Deployment
 from app.models.User import User
 from flask import json
 import datetime
-import logging
+
+
+def put_object(object):
+    db.session.add(object)
+    db.session.commit()
 
 
 def get_user(subject):
@@ -87,7 +91,7 @@ def updatedeploymentsstatus(deployments, userid):
 
             deps.append(dep)
         else:
-            logging.info("Deployment with uuid:{} not found!".format(uuid))
+            app.logger.info("Deployment with uuid:{} not found!".format(uuid))
 
             # retrieve template
             access_token = iam_blueprint.session.token['access_token']

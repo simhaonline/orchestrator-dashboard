@@ -1,6 +1,5 @@
 from flask import Blueprint, session, render_template, flash, request
 from app.lib import auth, dbhelpers, settings
-from app.models.Deployment import Deployment
 from app.models.User import User
 from app import app, iam_blueprint
 import requests

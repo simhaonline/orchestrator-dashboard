@@ -1,5 +1,5 @@
 from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
-from app import app, iam_blueprint, db, tosca
+from app import app, iam_blueprint, tosca
 from app.lib import auth, utils, settings, dbhelpers
 from app.models.Deployment import Deployment
 from app.providers import sla
@@ -74,8 +74,7 @@ def lockdeployment(depid=None):
     dep = dbhelpers.get_deployment(depid)
     if dep is not None:
         dep.locked = 1
-        db.session.add(dep)
-        db.session.commit()
+        dbhelpers.put_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
@@ -85,8 +84,7 @@ def unlockdeployment(depid=None):
     dep = dbhelpers.get_deployment(depid)
     if dep is not None:
         dep.locked = 0
-        db.session.add(dep)
-        db.session.commit()
+        dbhelpers.put_object(dep)
     return redirect(url_for('deployments_bp.showdeployments'))
 
 
@@ -251,8 +249,7 @@ def updatedep():
         dep.feedback_required = feedback_required
         dep.description = additionaldescription
         dep.template = template_text
-        db.session.add(dep)
-        db.session.commit()
+        dbhelpers.put_object(dep)
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -475,8 +472,7 @@ def createdep():
                                         vault_secret_key=vault_secret_key,
                                         elastic=elastic,
                                         updatable=updatable)
-                db.session.add(deployment)
-                db.session.commit()
+                dbhelpers.put_object(deployment)
 
             else:
                 flash("Deployment with uuid:{} is already in the database!".format(uuid))
