@@ -20,6 +20,8 @@ if not issuer.endswith('/'):
 def read_secret(depid=None):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
@@ -75,6 +77,8 @@ def ssh_keys():
 def store_privkey(access_token, privkey_value):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_write_policy = app.config.get("WRITE_POLICY")
     vault_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
@@ -102,6 +106,8 @@ def store_privkey(access_token, privkey_value):
 def read_privkey(subject):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
@@ -131,6 +137,8 @@ def read_privkey(subject):
 def delete_ssh_key(subject):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_delete_policy = app.config.get("DELETE_POLICY")
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
