@@ -40,14 +40,14 @@
                   </div>
                   <div class="modal-footer">
                     <a id="cancelBtn" class="btn btn-primary text-white" role="button" data-dismiss="modal">Cancel</a>
-                    <a id="deleteBtn" class="btn btn-danger text-white" role="button" onclick="location.href='{{ url_for('delete_ssh_key', subject=session['userid']) }}'">Delete SSH Key Pair</a>
+                    <a id="deleteBtn" class="btn btn-danger text-white" role="button" onclick="location.href='{{ url_for('vault_bp.delete_ssh_key', subject=session['userid']) }}'">Delete SSH Key Pair</a>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button type=button id="retrieveBtn" class="btn btn-sm btn-success" onclick="getVaultSSHPrivKey( href='{{ url_for('read_privkey_from_vault', subject=session['userid']) }}' )">
-                 <span class="fas fa-lock mr-2"></span> Retrieve SSH private key
+            <button type=button id="retrieveBtn" class="btn btn-sm btn-success" onclick="getVaultSSHPrivKey( href='{{ url_for('vault_bp.read_privkey_from_vault', subject=session['userid']) }}' )">
+                 <span class="fas fa-lock mr-2"></span>Retrieve SSH private key
             </button>
             <!-- Modal Retrieve luks passphrase-->
             <div class="modal fade" id="newModal">
@@ -142,7 +142,7 @@ async function getVaultSSHPrivKey(url)
   let  response = await fetch(url)
   let result = await response;
   secret = await response.text();
-
+  secret = secret.replace(/\\n/g, '\n').trim();
   fillModal(secret);
   stopSpinner();
 };

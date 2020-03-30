@@ -60,7 +60,7 @@ def create_ssh_key(subject):
     privkey = privkey.decode("utf-8").replace("\n", "\\n")
     store_privkey_to_vault(access_token, privkey)
 
-    User.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
+    dbhelpers.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
 
     return redirect(url_for('vault_bp.ssh_keys'))
 
@@ -85,9 +85,8 @@ def store_privkey_to_vault(access_token, privkey_value):
 
     vault_client = vaultservice.connect(jwt_token, vault_role)
 
-    write_token = vault_client.get_token(vault_write_policy, vault_write_token_time_duration,
-                                  vault_write_token_renewal_time_duration)
-
+    write_token = vault_client.get_token(vault_write_policy, vault_write_token_time_duration, vault_write_token_renewal_time_duration)
+    
     secret_path = session['userid'] + '/ssh_private_key'
     privkey_key = 'ssh_private_key'
 
@@ -137,7 +136,7 @@ def delete_ssh_key(subject):
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
     vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
-    User.delete_ssh_key(subject)
+    dbhelpers.delete_ssh_key(subject)
 
     access_token = iam_blueprint.session.token['access_token']
     privkey_key = session['userid'] + '/ssh_private_key'
@@ -164,7 +163,7 @@ def update_ssh_key(subject):
         flash("Invaild SSH public key. Please insert a correct one.", 'warning')
         return redirect(url_for('vault_bp.ssh_keys'))
 
-    User.update_user(subject, dict(sshkey=sshkey))
+    dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
     return redirect(url_for('vault_bp.ssh_keys'))
 

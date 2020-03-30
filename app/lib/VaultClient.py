@@ -35,9 +35,14 @@ class VaultClient:
         Get Vault token with specific policy
         POST '/v1/auth/token/create'
         """
-        token = self.client.create_token(self, policies=[policy], ttl=ttl, period=period)
+        token = self.client.create_token(policies=[policy], ttl=ttl, period=period)
 
         return token["auth"]["client_token"]
+
+    def set_token(self, vault_token):
+        self.client.token = vault_token
+        if not self.client.is_authenticated():
+            raise Exception("Error authenticating against Vault with token: {}".format(self.vault_token))
 
     def read_service_creds(self, path):
         
@@ -71,37 +76,39 @@ class VaultClient:
 
         return token["wrap_info"]["token"]
 
-    def write_secret(self, secret_path, key, value):
+    def write_secret(self, token, secret_path, key, value):
         """
         Write Secret to Vault
         POST '/v1/'+self.secrets_root+'/data/' + secret_path
         """
+        self.set_token(token)
         try:
-            response = self.client.secrets.kv.v2.create_or_update_secret(path=secret_path, cas=0,
-                                                                       secret=dict(key=value))
+            response = self.client.secrets.kv.v2.create_or_update_secret(path=secret_path, mount_point='secrets', cas=0, secret=dict(key=value))
         except hvac.exceptions.InvalidRequest as e:
             raise Exception("[FATAL] Unable to write vault path: {}".format(str(e)))
 
         return response
 
-    def read_secret(self, secret_path, key):
+    def read_secret(self, token, secret_path, key):
         """
         Read Secret from Vault.
         GET '/v1/'+self.secrets_root+'/data/' + secret_path
         """
+        self.set_token(token)
         try:
-            secret = self.client.secrets.kv.v2.read_secret_version(path=secret_path)
+            secret = self.client.secrets.kv.v2.read_secret_version(path=secret_path, mount_point='secrets')
         except hvac.exceptions.InvalidPath as e:
             raise Exception("[FATAL] Unable to read vault path: {}".format(str(e)))
 
-        return secret["data"]["data"][key]
+        return secret["data"]["data"]["key"]
 
-    def delete_secret(self, secret_path):
+    def delete_secret(self, token, secret_path):
         """
         Permanently delete secret and metadata from Vault.
         delete_url = self.vault_url + '/v1/'+self.secrets_root+'/metadata/' + secret_path
         """
-        self.client.secrets.kv.v2.delete_metadata_and_all_versions(path=secret_path)
+        self.set_token(token)
+        self.client.secrets.kv.v2.delete_metadata_and_all_versions(path=secret_path, mount_point='secrets')
 
     def revoke_token(self):
         """
