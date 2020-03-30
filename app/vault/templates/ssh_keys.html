@@ -46,7 +46,7 @@
               </div>
             </div>
 
-            <button type=button id="retrieveBtn" class="btn btn-sm btn-success" onclick="getVaultSSHPrivKey( href='{{ url_for('vault_bp.read_privkey_from_vault', subject=session['userid']) }}' )">
+            <button type=button id="retrieveBtn" class="btn btn-sm btn-success" onclick="getVaultSSHPrivKey( href='{{ url_for('vault_bp.read_privkey', subject=session['userid']) }}' )">
                  <span class="fas fa-lock mr-2"></span>Retrieve SSH private key
             </button>
             <!-- Modal Retrieve luks passphrase-->

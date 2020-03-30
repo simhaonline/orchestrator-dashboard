@@ -17,7 +17,7 @@ if not issuer.endswith('/'):
 
 @vault_bp.route('/read_secret/<depid>')
 @auth.authorized_with_valid_token
-def read_secret_from_vault(depid=None):
+def read_secret(depid=None):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
     vault_role = app.config.get("VAULT_ROLE")
@@ -58,7 +58,7 @@ def create_ssh_key(subject):
     access_token = iam_blueprint.session.token['access_token']
     privkey, pubkey = sshkeyhelpers.generate_ssh_key()
     privkey = privkey.decode("utf-8").replace("\n", "\\n")
-    store_privkey_to_vault(access_token, privkey)
+    store_privkey(access_token, privkey)
 
     dbhelpers.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
 
@@ -72,7 +72,7 @@ def ssh_keys():
     return render_template('ssh_keys.html', sshkey=sshkey)
 
 
-def store_privkey_to_vault(access_token, privkey_value):
+def store_privkey(access_token, privkey_value):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
     vault_role = app.config.get("VAULT_ROLE")
@@ -99,7 +99,7 @@ def store_privkey_to_vault(access_token, privkey_value):
 
 @vault_bp.route('/read_privkey_from_vault/<subject>')
 @auth.authorized_with_valid_token
-def read_privkey_from_vault(subject):
+def read_privkey(subject):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
     vault_role = app.config.get("VAULT_ROLE")
@@ -166,6 +166,3 @@ def update_ssh_key(subject):
     dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
     return redirect(url_for('vault_bp.ssh_keys'))
-
-
-
