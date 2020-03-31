@@ -51,7 +51,7 @@
               <!-- Vault integration  if -->
               {% if 'storage_encryption' in inputs and inputs['storage_encryption'] == 'True' %}
               <hr/>
-              <button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('vault_bp.read_secret_from_vault', depid=deployment.uuid) }}' )">
+              <button type=button id="retrieveBtn" class="btn btn-small btn-outline-success" onclick="getVaultSecret( href='{{ url_for('vault_bp.read_secret', depid=deployment.uuid) }}' )">
                 <span class="fas fa-lock mr-2"></span>Retrieve LUKS passphrase
               </button>
               <!-- Modal Retrieve luks passphrase-->
