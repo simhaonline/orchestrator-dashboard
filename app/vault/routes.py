@@ -30,22 +30,26 @@ def read_secret(depid=None):
     access_token = iam_blueprint.session.token['access_token']
 
     # retrieve deployment from DB
-    dep = Deployment.get_deployment(depid)
+    dep = dbhelpers.get_deployment(depid)
     if dep is None:
         return redirect(url_for('home_bp.home'))
     else:
 
         jwt_token = auth.exchange_token_with_audience(iam_base_url,
-                         iam_client_id, iam_client_secret, access_token, vault_bound_audience)
+                                                      iam_client_id,
+                                                      iam_client_secret,
+                                                      access_token,
+                                                      vault_bound_audience)
 
         vault_client = vaultservice.connect(jwt_token, vault_role)
 
-        read_token = vault_client.get_token(vault_read_policy, vault_read_token_time_duration,
-                                     vault_read_token_renewal_duration)
+        read_token = vault_client.get_token(vault_read_policy,
+                                            vault_read_token_time_duration,
+                                            vault_read_token_renewal_duration)
 
         # retrieval of secret_path and secret_key from the db goes here
-        secret_path = session['userid'] + "/" + dep['vault_secret_uuid']
-        user_key = dep['vault_secret_key']
+        secret_path = session['userid'] + "/" + dep.vault_secret_uuid
+        user_key = dep.vault_secret_key
 
         response_output = vault_client.read_secret(read_token, secret_path, user_key)
 
@@ -101,7 +105,7 @@ def store_privkey(access_token, privkey_value):
     return response_output
 
 
-@vault_bp.route('/read_privkey_from_vault/<subject>')
+@vault_bp.route('/read_privkey/<subject>')
 @auth.authorized_with_valid_token
 def read_privkey(subject):
 

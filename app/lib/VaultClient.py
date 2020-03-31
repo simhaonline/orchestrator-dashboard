@@ -84,8 +84,10 @@ class VaultClient:
         POST '/v1/'+self.secrets_root+'/data/' + secret_path
         """
         self.set_token(token)
+        secret_dict=dict()
+        secret_dict[key]=value
         try:
-            response = self.client.secrets.kv.v2.create_or_update_secret(path=secret_path, mount_point='secrets', cas=0, secret=dict(key=value))
+            response = self.client.secrets.kv.v2.create_or_update_secret(path=secret_path, mount_point='secrets', cas=0, secret=secret_dict)
         except hvac.exceptions.InvalidRequest as e:
             raise Exception("[FATAL] Unable to write vault path: {}".format(str(e)))
 
@@ -102,7 +104,7 @@ class VaultClient:
         except hvac.exceptions.InvalidPath as e:
             raise Exception("[FATAL] Unable to read vault path: {}".format(str(e)))
 
-        return secret["data"]["data"]["key"]
+        return secret["data"]["data"][key]
 
     def delete_secret(self, token, secret_path):
         """
