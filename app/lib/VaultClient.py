@@ -66,13 +66,15 @@ class VaultClient:
 
         self.client.secrets.kv.v1.delete_secret(path=vault_secret_path, mount_point="secret")
 
-    def get_wrapping_token(self, wrap_ttl, auth_token, policy, ttl, period):
+    def get_wrapping_token(self, wrap_ttl, policy, ttl, period):
         """
         Get Vault wrapping token with specific policy
         POST '/v1/auth/token/create'
         """
-        token = self.client.create_token(self, id_token=auth_token, policies=[policy], ttl=ttl,
-                                         period=period, wrap_ttl=wrap_ttl)
+        token = self.client.create_token(policies=[policy],
+                                         ttl=ttl,
+                                         period=period,
+                                         wrap_ttl=wrap_ttl)
 
         return token["wrap_info"]["token"]
 
