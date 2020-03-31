@@ -17,9 +17,11 @@ if not issuer.endswith('/'):
 
 @vault_bp.route('/read_secret/<depid>')
 @auth.authorized_with_valid_token
-def read_secret_from_vault(depid=None):
+def read_secret(depid=None):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
@@ -58,9 +60,9 @@ def create_ssh_key(subject):
     access_token = iam_blueprint.session.token['access_token']
     privkey, pubkey = sshkeyhelpers.generate_ssh_key()
     privkey = privkey.decode("utf-8").replace("\n", "\\n")
-    store_privkey_to_vault(access_token, privkey)
+    store_privkey(access_token, privkey)
 
-    User.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
+    dbhelpers.update_user(subject, dict(sshkey=pubkey.decode("utf-8")))
 
     return redirect(url_for('vault_bp.ssh_keys'))
 
@@ -72,9 +74,11 @@ def ssh_keys():
     return render_template('ssh_keys.html', sshkey=sshkey)
 
 
-def store_privkey_to_vault(access_token, privkey_value):
+def store_privkey(access_token, privkey_value):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_write_policy = app.config.get("WRITE_POLICY")
     vault_write_token_time_duration = app.config.get("WRITE_TOKEN_TIME_DURATION")
@@ -85,9 +89,8 @@ def store_privkey_to_vault(access_token, privkey_value):
 
     vault_client = vaultservice.connect(jwt_token, vault_role)
 
-    write_token = vault_client.get_token(vault_write_policy, vault_write_token_time_duration,
-                                  vault_write_token_renewal_time_duration)
-
+    write_token = vault_client.get_token(vault_write_policy, vault_write_token_time_duration, vault_write_token_renewal_time_duration)
+    
     secret_path = session['userid'] + '/ssh_private_key'
     privkey_key = 'ssh_private_key'
 
@@ -100,9 +103,11 @@ def store_privkey_to_vault(access_token, privkey_value):
 
 @vault_bp.route('/read_privkey_from_vault/<subject>')
 @auth.authorized_with_valid_token
-def read_privkey_from_vault(subject):
+def read_privkey(subject):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_read_policy = app.config.get("READ_POLICY")
     vault_read_token_time_duration = app.config.get("READ_TOKEN_TIME_DURATION")
@@ -132,12 +137,14 @@ def read_privkey_from_vault(subject):
 def delete_ssh_key(subject):
 
     vault_bound_audience = app.config.get('VAULT_BOUND_AUDIENCE')
+    vault_mountpoint_kv1 = app.config.get('VAULT_MOUNTPOINT_KV1')
+    vault_mountpoint_kv2 = app.config.get('VAULT_MOUNTPOINT_KV2')
     vault_role = app.config.get("VAULT_ROLE")
     vault_delete_policy = app.config.get("DELETE_POLICY")
     vault_delete_token_time_duration = app.config.get("DELETE_TOKEN_TIME_DURATION")
     vault_delete_token_renewal_time_duration = app.config.get("DELETE_TOKEN_RENEWAL_TIME_DURATION")
 
-    User.delete_ssh_key(subject)
+    dbhelpers.delete_ssh_key(subject)
 
     access_token = iam_blueprint.session.token['access_token']
     privkey_key = session['userid'] + '/ssh_private_key'
@@ -164,9 +171,6 @@ def update_ssh_key(subject):
         flash("Invaild SSH public key. Please insert a correct one.", 'warning')
         return redirect(url_for('vault_bp.ssh_keys'))
 
-    User.update_user(subject, dict(sshkey=sshkey))
+    dbhelpers.update_user(subject, dict(sshkey=sshkey))
 
     return redirect(url_for('vault_bp.ssh_keys'))
-
-
-

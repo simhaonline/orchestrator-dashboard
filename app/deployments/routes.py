@@ -1,5 +1,5 @@
 from flask import Blueprint, session, render_template, flash, redirect, url_for, json, request
-from app import app, iam_blueprint, tosca
+from app import app, iam_blueprint, tosca, vaultservice
 from app.lib import auth, utils, settings, dbhelpers
 from app.models.Deployment import Deployment
 from app.providers import sla
@@ -534,11 +534,12 @@ def add_storage_encryption(access_token, inputs):
                                                       access_token,
                                                       vault_bound_audience)
 
-        vault_client = app.vault.VaultClient(vault_url, jwt_token, vault_role)
+        vault_client = vaultservice.connect(jwt_token, vault_role)
 
-        wrapping_token = vault_client.get_wrapping_token(vault_wrapping_token_time_duration, jwt_token, vault_write_policy,
-                                                  vault_write_token_time_duration,
-                                                  vault_write_token_renewal_time_duration)
+        wrapping_token = vault_client.get_wrapping_token(vault_wrapping_token_time_duration,
+                                                         vault_write_policy,
+                                                         vault_write_token_time_duration,
+                                                         vault_write_token_renewal_time_duration)
 
         inputs['vault_wrapping_token'] = wrapping_token
         inputs['vault_secret_path'] = session['userid'] + '/' + vault_secret_uuid
