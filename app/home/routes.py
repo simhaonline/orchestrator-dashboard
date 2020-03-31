@@ -117,7 +117,7 @@ def logout():
     return redirect(url_for('home_bp.login'))
 
 
-@home_bp.route('/callback', methods=['POST'])
+@app.route('/callback', methods=['POST'])
 def callback():
     payload = request.get_json()
     app.logger.info("Callback payload: " + json.dumps(payload))
