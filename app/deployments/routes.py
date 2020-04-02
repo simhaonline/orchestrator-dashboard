@@ -26,6 +26,7 @@ issuer = settings.iamUrl
 if not issuer.endswith('/'):
     issuer += '/'
 
+
 @deployments_bp.route('/all')
 @auth.authorized_with_valid_token
 def showdeployments():
@@ -170,23 +171,35 @@ def depupdate(depid=None):
             access_token = iam_blueprint.session.token['access_token']
             template = dep.template
             tosca_info = tosca.extracttoscainfo(yaml.full_load(io.StringIO(template)), None)
+            inputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+            stinputs = json.loads(dep.stinputs.strip('\"')) if dep.stinputs else {}
+            tosca_info['inputs'] = {**tosca_info['inputs'], **stinputs}
+
+            for (k, v) in tosca_info['inputs'].items():
+                if k in inputs:
+                    if 'default' in tosca_info['inputs'][k]:
+                        tosca_info['inputs'][k]['default'] = inputs[k]
+
             sla_id = tosca_helpers.getslapolicy(tosca_info)
             slas = sla.get_slas(access_token, settings.orchestratorConf['slam_url'],
                                 settings.orchestratorConf['cmdb_url'])
             ssh_pub_key = dbhelpers.get_ssh_pub_key(session['userid'])
 
-            return render_template('depupdate.html',
-                                   template=template,
+
+            # return render_template('depupdate.html',
+            return render_template('updatedep.html',
+                                   template=tosca_info,
                                    template_description=tosca_info['description'],
                                    instance_description=dep.description,
                                    feedback_required=dep.feedback_required,
                                    keep_last_attempt=dep.keep_last_attempt,
                                    provider_timeout=app.config['PROVIDER_TIMEOUT'],
-                                   selectedTemplate=tosca_info,
+                                   selectedTemplate=dep.selected_template,
                                    ssh_pub_key=ssh_pub_key,
                                    slas=slas,
                                    sla_id=sla_id,
-                                   depid=depid)
+                                   depid=depid,
+                                   update=True)
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -201,55 +214,57 @@ def updatedep():
 
     app.logger.debug("Form data: " + json.dumps(form_data))
 
-    template_text = form_data['template']
-    template = yaml.full_load(io.StringIO(template_text))
+    depid = form_data['_depid']
+    if depid is not None:
+        dep = dbhelpers.get_deployment(depid)
 
-    depid = form_data['depid']
-    dep = dbhelpers.get_deployment(depid)
+        template = yaml.full_load(io.StringIO(dep.template))
+        params = {}
 
-    params = {}
+        keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data \
+            else dep.keep_last_attempt
+        feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
+        params['keepLastAttempt'] = 'true' if keep_last_attempt == 1 else 'false'
+        params['providerTimeoutMins'] = form_data[
+            'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
+            'PROVIDER_TIMEOUT']
+        params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
+        params['callback'] = app.config['CALLBACK_URL']
 
-    keep_last_attempt = 1 if 'extra_opts.keepLastAttempt' in form_data \
-        else dep.keep_last_attempt
-    feedback_required = 1 if 'extra_opts.sendEmailFeedback' in form_data else dep.feedback_required
-    params['keepLastAttempt'] = 'true' if keep_last_attempt == 1 else 'false'
-    params['providerTimeoutMins'] = form_data[
-        'extra_opts.providerTimeout'] if 'extra_opts.providerTimeoutSet' in form_data else app.config[
-        'PROVIDER_TIMEOUT']
-    params['timeoutMins'] = app.config['OVERALL_TIMEOUT']
-    params['callback'] = app.config['CALLBACK_URL']
+        if form_data['extra_opts.schedtype'].lower() == "man":
+            template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
+        else:
+            remove_sla_from_template(template)
 
-    if form_data['extra_opts.schedtype'].lower() == "man":
-        template = add_sla_to_template(template, form_data['extra_opts.selectedSLA'])
-    else:
-        remove_sla_from_template(template)
+        inputs = {k: v for (k, v) in form_data.items() if not k.startswith("extra_opts.") and not k == '_depid'}
+        oldinputs = json.loads(dep.inputs.strip('\"')) if dep.inputs else {}
+        inputs = {**oldinputs, **inputs}
 
-    additionaldescription = form_data['additional_description']
+        additionaldescription = form_data['additional_description']
 
-    inputs = json.loads(dep.inputs)
+        if additionaldescription is not None:
+            inputs['additional_description'] = additionaldescription
 
-    if additionaldescription is not None:
-        inputs['additional_description'] = additionaldescription
+        app.logger.debug("Parameters: " + json.dumps(inputs))
 
-    app.logger.debug("Parameters: " + json.dumps(inputs))
+        template_text = yaml.dump(template, default_flow_style=False, sort_keys=False)
+        payload = {"template": template_text, "parameters": inputs}
+        payload.update(params)
 
-    payload = {"template": yaml.dump(template, default_flow_style=False, sort_keys=False),
-               "parameters": inputs}
-    payload.update(params)
+        url = settings.orchestratorUrl + "/deployments/" + depid
+        headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
+        response = requests.put(url, json=payload, headers=headers)
 
-    url = settings.orchestratorUrl + "/deployments/" + depid
-    headers = {'Content-Type': 'application/json', 'Authorization': 'bearer %s' % access_token}
-    response = requests.put(url, json=payload, headers=headers)
-
-    if not response.ok:
-        flash("Error updating deployment: \n" + response.text)
-    else:
-        # store data into database
-        dep.keep_last_attempt = keep_last_attempt
-        dep.feedback_required = feedback_required
-        dep.description = additionaldescription
-        dep.template = template_text
-        dbhelpers.add_object(dep)
+        if not response.ok:
+            flash("Error updating deployment: \n" + response.text)
+        else:
+            # store data into database
+            dep.keep_last_attempt = keep_last_attempt
+            dep.feedback_required = feedback_required
+            dep.description = additionaldescription
+            dep.template = template_text
+            dep.inputs = json.dumps(inputs),
+            dbhelpers.add_object(dep)
 
     return redirect(url_for('deployments_bp.showdeployments'))
 
@@ -277,7 +292,8 @@ def configure():
                            selectedTemplate=selected_tosca,
                            ssh_pub_key=ssh_pub_key,
                            slas=slas,
-                           sla_id=sla_id)
+                           sla_id=sla_id,
+                           update=False)
 
 
 def remove_sla_from_template(template):
@@ -300,9 +316,8 @@ def add_sla_to_template(template, sla_id):
         tosca_sla_placement_type = "tosca.policies.indigo.SlaPlacement"
     else:
         tosca_sla_placement_type = "tosca.policies.Placement"
-
-    template['topology_template']['policies'] = [
-        {"deploy_on_specific_site": {"type": tosca_sla_placement_type, "properties": {"sla_id": sla_id}}}]
+    template['topology_template']['policies'] = \
+        [{"deploy_on_specific_site": {"type": tosca_sla_placement_type, "properties": {"sla_id": sla_id}}}]
 
     app.logger.debug(yaml.dump(template, default_flow_style=False))
 
@@ -458,6 +473,7 @@ def createdep():
                                         links=json.dumps(rs_json['links']),
                                         sub=rs_json['createdBy']['subject'],
                                         template=template_text,
+                                        selected_template=selected_template,
                                         inputs=json.dumps(inputs),
                                         stinputs=json.dumps(stinputs),
                                         params=json.dumps(params),

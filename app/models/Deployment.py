@@ -17,6 +17,7 @@ class Deployment(db.Model):
     links = db.Column(db.Text, nullable=True)
     provider_name = db.Column(db.String(128), nullable=True)
     endpoint = db.Column(db.String(256), nullable=True)
+    selected_template = db.Column(db.Text, nullable=True)
     template = db.Column(db.Text, nullable=True)
     inputs = db.Column(db.Text, nullable=True)
     stinputs = db.Column(db.Text, nullable=True)

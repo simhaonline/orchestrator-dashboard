@@ -1,5 +1,6 @@
 <div class="form-group">
-  {% if value.type is not defined or (value.type != "hidden" and value.type != "swift_upload" and value.type != "swift_token" and value.type != "swift_autouuid" )%}
+  {% if (value.type is not defined or (value.type != "hidden" and value.type != "swift_upload" and value.type != "swift_token" and value.type != "swift_autouuid" ))
+          and (update == False or value.updatable is not defined or value.updatable == True)%}
   <label for="{{key}}">
     {% if value.display_name is defined %}
     {{value.display_name}}
@@ -8,7 +9,7 @@
     {% endif %}
   </label>
   {% endif %}
-  {% if value.type is defined %}
+  {% if value.type is defined and (update == False or value.updatable is not defined or value.updatable == True)%}
 
     <!-- text type -->
     {% if value.type == "text" %}
