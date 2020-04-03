@@ -91,28 +91,33 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
-
-
   $(".nav-link").click(function () {
+     checkForm()
+  });
+  $('input').on("input", function () {
+     checkForm()
+  });
+});
 
-    document.getElementById('myalert').style.display = "none";
+function checkForm(){
+    var valid = true;
     $('input').each(function(){
-
        if (this.required && (this.value == '')){
-         var name = this.name;
-         console.log(name + ' REQUIRED');
          this.style.borderColor = 'red';
-         document.getElementById('myalert').style.display = "block";
+         valid = false;
        }
        else {
          this.style.borderColor = '#ccc';
        }
     });
-
-
-  });
-
-});
+    if (!valid){
+        document.getElementById('myalert').style.display = "block";
+    }
+    else {
+        document.getElementById('myalert').style.display = "none";
+    }
+    return valid;
+};
 
 $(document).ready(function () {
     $("#depSubmit").submit(function () {
@@ -124,6 +129,7 @@ $(document).ready(function () {
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
         return true;
+
     });
 });
 
@@ -174,6 +180,8 @@ $('#popupMaintenanceCheckbox').click(function(){
     }
 });
 </script>
+
+
 {% endif  %}
 
 {% endblock %}
