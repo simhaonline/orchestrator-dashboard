@@ -517,13 +517,16 @@ def delete_secret_from_vault(access_token, secret_path):
     vault_role = app.config.get("VAULT_ROLE")
 
     jwt_token = auth.exchange_token_with_audience(iam_base_url,
-                                                  iam_client_id, iam_client_secret, access_token,
+                                                  iam_client_id,
+                                                  iam_client_secret,
+                                                  access_token,
                                                   vault_bound_audience)
 
-    vault_client = app.vault.VaultClient(vault_url, jwt_token, vault_role)
+    vault_client = vaultservice.connect(jwt_token, vault_role)
 
-    delete_token = vault_client.get_token(vault_delete_policy, vault_delete_token_time_duration,
-                                   vault_delete_token_renewal_time_duration)
+    delete_token = vault_client.get_token(vault_delete_policy,
+                                          vault_delete_token_time_duration,
+                                          vault_delete_token_renewal_time_duration)
 
     vault_client.delete_secret(delete_token, secret_path)
 
