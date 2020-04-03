@@ -60,8 +60,8 @@
              {% set ar.found = true %}
         {% endif %}
         <tr>
-            <td>{{deployment.description}}</td>
-            <td><strong><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
+            <td><strong>{{deployment.description}}</strong></td>
+            <td><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></td>
             <td>
                 {% if "COMPLETE" in deployment.status %}
                 <span class="badge badge-success"/>
@@ -100,6 +100,8 @@
                   {% else %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
                   {% endif %}
+                  <a class="dropdown-item" href="{{ url_for('deployments_bp.depinfradetails', physicalId=deployment.physicalId) }}">
+                      <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
                 </div>
               </div>
             </td>

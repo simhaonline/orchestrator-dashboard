@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+  <div id="accordion">
+  {% for info in vmsdetails %}
+  <div class="card border-secondary mb-2">
+    <div class="card-header" id="heading{{loop.index}}">
+        <button class="btn btn-link" data-toggle="collapse" data-target="#collapse{{loop.index}}" aria-expanded="false" aria-controls="collapse{{loop.index}}">
+          VM#{{loop.index}} ({{info.instance_name}})
+        </button>
+       {% if info.state == "configured" %}
+       <span class="badge badge-success"/>
+       {% elif info.state in ["stopped", "off"] %}
+       <span class="badge badge-warning text-white"/>
+       {% elif info.state in ["failed", "unconfigured", "unknown"] %}
+       <span class="badge badge-danger"/>
+       {% else %}
+       <span class="badge badge-warning text-white"><span class="spinner-grow spinner-grow-sm"></span>
+       {% endif %}
+       {{ info.state }}
+       </span>
+    </div>
+
+    <div id="collapse{{loop.index}}" class="collapse" aria-labelledby="heading{{loop.index}}" data-parent="#accordion">
+      <div class="card-body">
+           <p><strong>name:</strong> {{info.instance_name}}<p>
+           <p><strong>provider host:</strong>{{info['provider.host']}}</p>
+           {% set ips = (info | extract_netinterface_ips) %}
+           {% for k,v in ips.items() %}
+           <p><strong>{{k}}:</strong> {{v}}</p>
+           {% endfor %}
+           <p><strong>cores:</strong> {{info['cpu.count']}}</p>
+           <p><strong>ram:</strong> {{info['memory.size']/1048576}} MB</p>
+           {% if 'disk.0.free_size' in info %}
+           <p><strong>disk:</strong> {{info['disk.0.free_size']/1073741824}} GB</p>
+           {% endif %}
+           <p><strong>Operating System:</strong> {{info['disk.0.os.flavour']}} {{info['disk.0.os.version']}}</p>
+           <p><strong>username:</strong> {{info['disk.0.os.credentials.username']}}</p>
+           <p><strong>ssh private key:</strong> <br> 
+           <div class="d-none ssh-key" id="text-val{{loop.index}}">{{ info['disk.0.os.credentials.private_key'] }}</div>
+           <button class="btn btn-primary btn-sm downloadBtn" id="downloadBtn{{loop.index}}"><i class="fa fa-download"></i> Download</button>
+           <button class="btn btn-success btn-sm copyBtn" id="copyBtn{{loop.index}}"><i class="fa fa-copy"></i> Copy to clipboard</button>
+           </p>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+
+</div>
+<script>
+
+function download(filename, text) {
+  var element = document.createElement('a');
+  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  element.setAttribute('download', filename);
+
+  element.style.display = 'none';
+  document.body.appendChild(element);
+
+  element.click();
+
+  document.body.removeChild(element);
+}
+
+
+$(document).ready(function () {
+    $(".downloadBtn").click(function () {
+        var text = $(this).parent().find(".ssh-key")[0].innerHTML;
+        var filename = "key.pem";
+
+        download(filename, text);
+    });
+});
+
+$(document).ready(function () {
+   $(".copyBtn").click(function () {
+     var text = $(this).parent().find(".ssh-key")[0].innerHTML;
+
+  // Create a new textarea element and give it id='temp_element'
+  var textarea = document.createElement('textarea');
+  textarea.id = 'temp_element';
+  textarea.style.height = 0;
+  document.body.appendChild(textarea);
+  textarea.value = text
+  var selector = document.querySelector('#temp_element')
+  selector.select()
+  document.execCommand('copy')
+  // Remove the textarea
+  document.body.removeChild(textarea)
+
+   });
+});
+
+</script>
+
+{% endblock %}
+

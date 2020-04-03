@@ -17,6 +17,7 @@ if not issuer.endswith('/'):
     issuer += '/'
 
 app.jinja_env.filters['tojson_pretty'] = utils.to_pretty_json
+app.jinja_env.filters['extract_netinterface_ips'] = utils.extract_netinterface_ips
 
 toscaInfo = tosca.tosca_info
 
