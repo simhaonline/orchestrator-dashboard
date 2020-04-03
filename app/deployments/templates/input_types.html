@@ -115,7 +115,18 @@
     <!-- end swift_token special input type -->
 
     {% else %}
+      <!-- select type if constraints are defined -->
+	  {% set constraints = value.constraints | selectattr('valid_values') | map(attribute='valid_values') | list  %}
+	  {% if constraints %}
+	  <select class="js-example-basic-single js-states form-control" id="{{key}}" name="{{key}}">
+          {% for val in constraints[0] %}
+             <option value="{{val}}">{{val}}</option>
+          {% endfor %}
+      </select>
+      {% else %}
+      <!-- text type, hide fields with password -->
       <input {% if 'password' in key %}type="password"{% else %}type="text"{% endif %} class="form-control" id="{{key}}" name="{{key}}" value="{{value.default}}" aria-describedby="help{{key}}" {% if value.required %}required{%endif%} />
+      {% endif %}
     {% endif %}  <!-- end tag type existence if -->
 
   <span id="help{{key}}" class="text-muted">{{value.description}}</span>
