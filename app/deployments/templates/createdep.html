@@ -55,6 +55,9 @@
                     <input type="text" class="form-control" id="additional_description" name="additional_description" placeholder="Instance description" value="" required>
                 </div>
                 {% include 'config_form.html' %}
+                <div id="myalert" class="alert alert-danger alert-dismissible fade show" style="display:none;" role="danger">
+                  <strong>Warning!</strong> You have not filled some mandatory fields. Please check the red boxes in each tab.
+                </div>
                 <button type="submit" class="btn btn-success submitBtn">Submit</button>
                 <button id="cancelBtn" type=button class="btn btn-small btn-primary" onclick="location.href='{{ url_for('home_bp.home') }}'">
                 <span class="fas fa-ban mr-2"></span>Cancel</button>
@@ -88,6 +91,35 @@ $(document).ready(function () {
 });
 
 $(document).ready(function () {
+  $(".nav-link").click(function () {
+     checkForm()
+  });
+  $('input').on("input", function () {
+     checkForm()
+  });
+});
+
+function checkForm(){
+    var valid = true;
+    $('input').each(function(){
+       if (this.required && (this.value == '')){
+         this.style.borderColor = 'red';
+         valid = false;
+       }
+       else {
+         this.style.borderColor = '#ccc';
+       }
+    });
+    if (!valid){
+        document.getElementById('myalert').style.display = "block";
+    }
+    else {
+        document.getElementById('myalert').style.display = "none";
+    }
+    return valid;
+};
+
+$(document).ready(function () {
     $("#depSubmit").submit(function () {
         //disable button on click
         $(".submitBtn").attr("disabled", true);
@@ -97,6 +129,7 @@ $(document).ready(function () {
         $("#cancelBtn").attr("disabled", true);
         $("#cancelBtn").attr("onclick", "#");
         return true;
+
     });
 });
 
@@ -147,6 +180,8 @@ $('#popupMaintenanceCheckbox').click(function(){
     }
 });
 </script>
+
+
 {% endif  %}
 
 {% endblock %}

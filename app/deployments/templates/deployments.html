@@ -60,8 +60,8 @@
              {% set ar.found = true %}
         {% endif %}
         <tr>
-            <td>{{deployment.description}}</td>
-            <td><strong><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></strong></td>
+            <td><strong>{{deployment.description}}</strong></td>
+            <td><a href="{{ url_for('deployments_bp.depoutput', depid=deployment.uuid) }}">{{deployment.uuid}}</a></td>
             <td>
                 {% if "COMPLETE" in deployment.status %}
                 <span class="badge badge-success"/>
@@ -100,6 +100,8 @@
                   {% else %}
                     <a class="dropdown-item" href="{{ url_for('deployments_bp.unlockdeployment', depid=deployment.uuid) }}"><span class="fas fa-lock-open mr-2"></span>Unlock</a>
                   {% endif %}
+                  <a class="dropdown-item" href="{{ url_for('deployments_bp.depinfradetails', physicalId=deployment.physicalId) }}">
+                      <span class="fas fa-bars mr-2 grey-text"></span>VM details</a>
                 </div>
               </div>
             </td>
@@ -116,8 +118,8 @@
                 Do you really want to delete the deployment {{deployment.uuid}} ?
               </div>
               <div class="modal-footer">
-                <a id="cancelBtn" class="btn btn-primary text-white" role="button" data-dismiss="modal">Cancel</a>
-                <a id="deleteBtn" class="btn btn-danger" role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}">Delete deployment</a>
+                <a class="btn btn-primary cancelBtn" role="button" data-dismiss="modal">Cancel</a>
+                <a class="btn btn-danger deleteBtn" role="button" href="{{ url_for("deployments_bp.depdel", depid=deployment.uuid) }}">Delete deployment</a>
               </div>
             </div>
           </div>
@@ -155,10 +157,14 @@ $(document).ready(function () {
          ],
         "order": [[ 3, "desc" ]]
     });
+});
+</script>
 
-    $("#deleteBtn").click(function () {
+<script>
+$(document).ready(function () {
+    $(".deleteBtn").click(function () {
         // add spinner to button
-        $("#cancelBtn").addClass("disabled", true);
+        $(this).parent().find(".cancelBtn").addClass("disabled", true);
         $(this).addClass("disabled", true);
         $(this).html( `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...` );
     });
