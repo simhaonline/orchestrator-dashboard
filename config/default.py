@@ -20,7 +20,10 @@ SQLALCHEMY_VERSION_HEAD = "88bc3c2c02a6"
 ### NOTIFICATION SETTINGS
 MAIL_SERVER = "relay-mbox.recas.ba.infn.it"
 MAIL_PORT = "25"
-MAIL_SENDER = "admin@orchestrator-dashboard"
+MAIL_DEFAULT_SENDER = "admin@orchestrator-dashboard"
+MAIL_USERNAME = None
+MAIL_PASSWORD = None
+
 
 ### ADMIN SETTINGS
 SUPPORT_EMAIL = "marica.antonacci@ba.infn.it"
