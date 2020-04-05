@@ -5,6 +5,7 @@ from markupsafe import Markup
 from werkzeug.exceptions import Forbidden
 from flask import Blueprint, json, render_template, request, redirect, url_for, session, make_response
 from flask_mail import Message
+from threading import Thread
 import json
 
 
@@ -158,22 +159,14 @@ def callback():
     mail_sender = app.config.get('MAIL_SENDER')
     if mail_sender and user_email != '' and rf == 1:
         if status == 'CREATE_COMPLETE':
-            msg = Message("Deployment complete",
-                          sender=mail_sender,
-                          recipients=[user_email])
-            msg.body = "Your deployment request with uuid: {} has been successfully completed.".format(uuid)
             try:
-                mail.send(msg)
+                create_and_send_email("Deploymwent complete", mail_sender, [user_email], status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
         if status == 'CREATE_FAILED':
-            msg = Message("Deployment failed",
-                          sender=mail_sender,
-                          recipients=[user_email])
-            msg.body = "Your deployment request with uuid: {} has failed.".format(uuid)
             try:
-                mail.send(msg)
+                create_and_send_email("Deploymwent failed", mail_sender, [user_email], status)
             except Exception as error:
                 utils.logexception("sending email:".format(error))
 
@@ -184,5 +177,19 @@ def callback():
     return resp
 
 
+def create_and_send_email(subject, sender, recipients, status):
+    send_email(subject,
+               sender=sender,
+               recipients=recipients,
+               html_body=render_template('email.html', status=status))
 
 
+def send_email(subject, sender, recipients, html_body):
+    msg = Message(subject, sender=sender, recipients=recipients)
+    msg.html = html_body
+    Thread(target=send_async_email, args=(app, msg)).start()
+
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
