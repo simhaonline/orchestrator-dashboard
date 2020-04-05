@@ -1,0 +1,42 @@
+<html xmlns="www.elixir-italy.org">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <title></title>
+        <style></style>
+    </head>
+    <body>
+        <table border="0" cellpadding="0" cellspacing="0" height="100%" width="100%" id="bodyTable">
+            <tr>
+                <td align="center" valign="top">
+                    <table border="0" cellpadding="20" cellspacing="0" width="600" id="emailContainer">
+                        <tr>
+                            <img src="https://raw.githubusercontent.com/maricaantonacci/orchestrator-dashboard/stateful/app/home/static/images/orchestrator-logo.png" width="200" height="150" align="center"></img>
+                            <td valign="top" >
+				{% if status == "CREATE_COMPLETE" %}
+                                Dear User,<BR>
+                                This is an automatically generated notification mail<BR>
+                                YOU DO NOT NEED TO ANSWER THIS MESSAGE.<BR>
+                                <p>
+                                Your instance is up and running.
+                                <p>
+                                Kind Regards. <BR>
+
+				{% elif status == "CREATE_FAILED" %}
+				Dear User,<BR>
+                                This is an automatically generated notification mail<BR>
+                                YOU DO NOT NEED TO ANSWER THIS MESSAGE<BR>
+                                <p>
+				Your reployment is failed
+                                <p>
+                                Kind Regards. <BR>
+
+				{% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+~        
