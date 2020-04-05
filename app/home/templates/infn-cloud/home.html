@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class = "jumbotron jumbotron-fluid jumbotron-custom">
+  <div class="container">
+    <div class="row">
+      <div class="col">
+        <h1 class="display-4">Welcome to the INFN Cloud Dashboard!</h1>
+        <p></p>
+        <p>
+          <a class="btn btn-primary btn-lg" role="button" href="{{ url_for("iam.login") }}">Please login, or register &raquo;</a>
+        </p>
+      </div>
+      <div class="col">
+        <img src="static/images/infn-cloud/logo_infn.png"></img>
+      </div>
+    </div>	  
+  </div>
+</div>
+
+<style>
+.jumbotron-custom {
+    background: #1C486F;
+    background-image: url(static/images/infn-cloud/network.png);
+    background-repeat: repeat-x;
+    background-position: bottom;
+    color: #ffffff;
+    padding-bottom:300px;
+    font-weight: bold;
+    font-family: 'Thasadith', sans-serif;
+}
+</style>
+{% endblock %}
+
