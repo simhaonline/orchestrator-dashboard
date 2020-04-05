@@ -5,7 +5,7 @@ IAM_CLIENT_ID = "XXX-XXX-XXX-XXX-XXX"
 IAM_CLIENT_SECRET = "************"
 IAM_BASE_URL = "https://iam.example.com"
 ORCHESTRATOR_URL = "https://orchestrator.example.com"
-CALLBACK_URL = "https://dashboard.example.com/callback"
+CALLBACK_URL = "https://dashboard.example.com/home/callback"
 
 ### TOSCA-related SETTINGS
 TOSCA_TEMPLATES_DIR = "/opt/tosca-templates"
