@@ -65,8 +65,8 @@ def home():
         user_groups = account_info_json['groups']
 
         if settings.iamGroups:
-            if set(settings.iamGroups) & set(user_groups) == set():
-                app.logger.debug("No match on group membership. User group membership: {0} whereas requested"
+            if set(settings.iamGroups)&set(user_groups) == set():
+                app.logger.debug("No match on group membership. User group membership: "
                                  + json.dumps(user_groups))
                 message = Markup(
                     'You need to be a member of one (or more) of these IAM groups: {0}. <br>' +
