@@ -50,6 +50,7 @@ def inject_settings():
         footer_template=app.config.get('FOOTER_TEMPLATE'),
         welcome_message=app.config.get('WELCOME_MESSAGE'),
         navbar_brand_text=app.config.get('NAVBAR_BRAND_TEXT'),
+        navbar_brand_icon=app.config.get('NAVBAR_BRAND_ICON'),
         enable_vault_integration=False if app.config.get('FEATURE_VAULT_INTEGRATION').lower() == 'no' else True,
         external_links=app.config.get('EXTERNAL_LINKS') if app.config.get('EXTERNAL_LINKS') else [],
         enable_advanced_menu=app.config.get('FEATURE_ADVANCED_MENU') if app.config.get(
